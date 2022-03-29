@@ -507,8 +507,8 @@ lemma finrank_quotient_map.linear_independent_of_injective
   (f' : V'' →ₗ[R] V') {b : ι → V''}
   (hb' : linear_independent S (f' ∘ b)) : linear_independent K (f ∘ b) :=
 begin
-  rw [← linear_independent.iff_fraction_ring R K,
-      f.linear_independent_iff (linear_map.ker_eq_bot.mpr hf)],
+  apply linear_independent.localization K R⁰,
+  rw f.linear_independent_iff (linear_map.ker_eq_bot.mpr hf),
   refine linear_independent.of_comp f' (linear_independent.restrict_scalars_algebras _ hb'),
   simpa only [algebra.smul_def, mul_one] using hRS,
   { apply_instance }
@@ -680,7 +680,7 @@ begin
       : by rw [submodule.map_top, submodule.range_mkq]
     ... ≤ (submodule.span (R ⧸ p) (set.range ⇑b)).restrict_scalars R : b.span_eq.ge
     ... = submodule.span R (set.range ⇑b)
-      : algebra.span_eq_span_of_surjective ideal.quotient.mk_surjective _
+      : algebra.span_restrict_scalars_eq_span_of_surjective ideal.quotient.mk_surjective _
     ... = submodule.map (submodule.restrict_scalars R _).mkq (submodule.span R (set.range b'))
       : by { rw [b_eq_b', set.range_comp, submodule.map_span], refl } },
   { have := b.linear_independent, rw b_eq_b' at this,
