@@ -10,6 +10,7 @@ import linear_algebra.free_module.finite.rank
 import linear_algebra.free_module.pid
 import linear_algebra.matrix.nonsingular_inverse
 import ring_theory.dedekind_domain.ideal
+import ring_theory.localization.module
 
 /-!
 # Ramification index and inertia degree
@@ -56,29 +57,6 @@ open fractional_ideal
 open_locale pointwise
 
 open_locale matrix
-
-lemma algebra.span_eq_span_of_surjective {R A M : Type*} [comm_semiring R] [semiring A]
-  [add_comm_monoid M]
-  [algebra R A] [module A M] [module R M] [is_scalar_tower R A M]
-  (h : function.surjective (algebra_map R A)) (s : set M) :
-  (submodule.span A s).restrict_scalars R = submodule.span R s :=
-begin
-  refine le_antisymm (λ x hx, _) (submodule.span_subset_span _ _ _),
-  refine submodule.span_induction hx _ _ _ _,
-  { exact λ x hx, submodule.subset_span hx },
-  { exact submodule.zero_mem _ },
-  { exact λ x y, submodule.add_mem _ },
-  { intros c x hx,
-    obtain ⟨c', rfl⟩ := h c,
-    rw is_scalar_tower.algebra_map_smul,
-    exact submodule.smul_mem _ _ hx },
-end
-
-lemma algebra.coe_span_eq_span_of_surjective {R A M : Type*} [comm_semiring R] [semiring A]
-  [add_comm_monoid M] [algebra R A] [module A M] [module R M] [is_scalar_tower R A M]
-  (h : function.surjective (algebra_map R A)) (s : set M) :
-  (submodule.span A s : set M) = submodule.span R s :=
-congr_arg coe (algebra.span_eq_span_of_surjective h s)
 
 lemma submodule.sub_mem_iff_left {R M : Type*} [ring R] [add_comm_group M] [module R M]
   (N : submodule R M) {x y : M} (hy : y ∈ N) : (x - y) ∈ N ↔ x ∈ N :=
