@@ -515,7 +515,7 @@ lemma finrank_quotient_map.linear_independent_of_injective
   (f' : V'' →ₗ[R] V') {b : ι → V''}
   (hb' : linear_independent S (f' ∘ b)) : linear_independent K (f ∘ b) :=
 begin
-  rw [← linear_independent.of_fraction_ring R K,
+  rw [← linear_independent.iff_fraction_ring R K,
       f.linear_independent_iff (linear_map.ker_eq_bot.mpr hf)],
   refine linear_independent.of_comp f' (linear_independent.restrict_scalars_algebras _ hb'),
   simpa only [algebra.smul_def, mul_one] using hRS,
