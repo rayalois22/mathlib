@@ -58,14 +58,6 @@ open_locale pointwise
 
 open_locale matrix
 
-lemma submodule.sub_mem_iff_left {R M : Type*} [ring R] [add_comm_group M] [module R M]
-  (N : submodule R M) {x y : M} (hy : y ∈ N) : (x - y) ∈ N ↔ x ∈ N :=
-by rw [sub_eq_add_neg, N.add_mem_iff_left (N.neg_mem hy)]
-
-lemma submodule.sub_mem_iff_right {R M : Type*} [ring R] [add_comm_group M] [module R M]
-  (N : submodule R M) {x y : M} (hx : x ∈ N) : (x - y) ∈ N ↔ y ∈ N :=
-by rw [sub_eq_add_neg, N.add_mem_iff_right hx, N.neg_mem_iff]
-
 /-- Promote a surjective ring homomorphism to an equivalence by dividing out its kernel. -/
 noncomputable def ideal.lift_equiv {R S : Type*} [comm_ring R] [comm_ring S] (f : R →+* S)
   (hf : function.surjective f)
