@@ -58,25 +58,6 @@ open_locale pointwise
 
 open_locale matrix
 
-theorem ideal.is_prime.mul_mem_iff {R : Type*} [comm_semiring R] {I : ideal R} (hI : I.is_prime)
-  {a b : R} : a * b ∈ I ↔ a ∈ I ∨ b ∈ I :=
-⟨hI.mem_or_mem, λ h, h.cases_on (I.mul_mem_right b) (I.mul_mem_left a)⟩
-
-lemma ideal.is_prime.mul_mem_pow {R : Type*} [comm_ring R] [is_domain R]
-  [is_dedekind_domain R]
-  (I : ideal R) [hI : I.is_prime]
-  {a b : R} {n : ℕ} (h : a * b ∈ I^n) : a ∈ I ∨ b ∈ I^n :=
-begin
-  cases n, { simp },
-  by_cases hI0 : I = ⊥, { simpa [pow_succ, hI0] using h },
-  simp only [← submodule.span_singleton_le_iff_mem, ideal.submodule_span_eq, ← ideal.dvd_iff_le,
-    ← ideal.span_singleton_mul_span_singleton] at h ⊢,
-  by_cases ha : I ∣ span {a},
-  { exact or.inl ha },
-  rw mul_comm at h,
-  exact or.inr (prime.pow_dvd_of_dvd_mul_right ((ideal.prime_iff_is_prime hI0).mpr hI) _ ha h),
-end
-
 @[simp]
 lemma ideal.quotient.mk_mem_map_mk {R : Type*} [comm_ring R] {I J : ideal R} {x : R} :
   ideal.quotient.mk I x ∈ J.map I^.quotient.mk ↔ x ∈ J ⊔ I :=
@@ -96,20 +77,9 @@ begin
     multiset.count_repeat_self],
 end
 
-@[simp] lemma multiset.inter_repeat {α : Type*} [decidable_eq α] (s : multiset α) (x : α) (n : ℕ)  :
+@[simp] lemma multiset.inter_repeat {α : Type*} [decidable_eq α] (s : multiset α) (x : α) (n : ℕ) :
   s ∩ multiset.repeat x n = multiset.repeat x (min (s.count x) n) :=
 by rw [multiset.inter_comm, multiset.repeat_inter, min_comm]
-
-section
-open_locale classical
-
-lemma ideal.count_normalized_factors_eq {R : Type*} [comm_ring R] [is_domain R]
-  [is_dedekind_domain R] {p x : ideal R} (hp0 : p ≠ ⊥) [hp : p.is_prime] {n : ℕ}
-  (hle : x ≤ p^n) (hlt : ¬ (x ≤ p^(n+1))) :
-  (normalized_factors x).count p = n :=
-count_normalized_factors_eq ((ideal.prime_iff_is_prime hp0).mpr hp) (normalize_eq _)
-  (ideal.dvd_iff_le.mpr hle) (mt ideal.le_of_dvd hlt)
-end
 
 lemma char_zero.nsmul_eq_zero_iff {R : Type*} [semiring R] [no_zero_divisors R] [char_zero R]
   {n : ℕ} {x : R} :
@@ -134,6 +104,32 @@ lemma finite_dimensional_iff_of_rank_eq_nsmul
   finite_dimensional K V ↔ finite_dimensional K W :=
 by simp only [finite_dimensional, ← is_noetherian.iff_fg, is_noetherian.iff_dim_lt_omega, hVW,
   cardinal.nsmul_lt_omega_iff hn]
+
+section
+open_locale classical
+
+lemma ideal.is_prime.mul_mem_pow {R : Type*} [comm_ring R] [is_domain R]
+  [is_dedekind_domain R]
+  (I : ideal R) [hI : I.is_prime]
+  {a b : R} {n : ℕ} (h : a * b ∈ I^n) : a ∈ I ∨ b ∈ I^n :=
+begin
+  cases n, { simp },
+  by_cases hI0 : I = ⊥, { simpa [pow_succ, hI0] using h },
+  simp only [← submodule.span_singleton_le_iff_mem, ideal.submodule_span_eq, ← ideal.dvd_iff_le,
+    ← ideal.span_singleton_mul_span_singleton] at h ⊢,
+  by_cases ha : I ∣ span {a},
+  { exact or.inl ha },
+  rw mul_comm at h,
+  exact or.inr (prime.pow_dvd_of_dvd_mul_right ((ideal.prime_iff_is_prime hI0).mpr hI) _ ha h),
+end
+
+lemma ideal.count_normalized_factors_eq {R : Type*} [comm_ring R] [is_domain R]
+  [is_dedekind_domain R] {p x : ideal R} (hp0 : p ≠ ⊥) [hp : p.is_prime] {n : ℕ}
+  (hle : x ≤ p^n) (hlt : ¬ (x ≤ p^(n+1))) :
+  (normalized_factors x).count p = n :=
+count_normalized_factors_eq ((ideal.prime_iff_is_prime hp0).mpr hp).irreducible (normalize_eq _)
+  (ideal.dvd_iff_le.mpr hle) (mt ideal.le_of_dvd hlt)
+end
 
 section chinese_remainder
 
@@ -177,17 +173,10 @@ begin
   exact ((ideal.prime_iff_is_prime hP0).mpr hP).dvd_finset_prod_iff _
 end
 
-lemma ideal.prime_le_prime_iff_eq {R : Type*} [comm_ring R] [is_domain R]
-  [is_dedekind_domain R] {P Q : ideal R} [hP : P.is_prime] [hQ : Q.is_prime] (hP0 : P ≠ ⊥) :
+lemma ring.dimension_le_one.prime_le_prime_iff_eq {R : Type*} [comm_ring R] [is_domain R]
+  (h : ring.dimension_le_one R) {P Q : ideal R} [hP : P.is_prime] [hQ : Q.is_prime] (hP0 : P ≠ ⊥) :
   P ≤ Q ↔ P = Q :=
-begin
-  by_cases hQ0 : Q = ⊥,
-  { rw [hQ0, le_bot_iff] },
-  rw ← ideal.dvd_iff_le,
-  exact (prime_dvd_prime_iff_eq
-      ((ideal.prime_iff_is_prime hQ0).mpr hQ) ((ideal.prime_iff_is_prime hP0).mpr hP)).trans
-    eq_comm
-end
+⟨(h P hP0 hP).eq_of_le hQ.ne_top, eq.le⟩
 
 lemma ideal.coprime_of_no_prime_ge {R : Type*} [comm_ring R] {I J : ideal R}
   (h : ∀ P, I ≤ P → J ≤ P → ¬ is_prime P) : I ⊔ J = ⊤ :=
@@ -215,8 +204,10 @@ begin
   obtain ⟨b, hb, hPb⟩ := ideal.prod_le_prime.mp hPs,
   haveI := ideal.is_prime_of_prime (prime a), haveI := ideal.is_prime_of_prime (prime b),
   refine coprime a b _
-    (((ideal.prime_le_prime_iff_eq _).mp (ideal.le_of_pow_le_prime hPa)).trans
-      ((ideal.prime_le_prime_iff_eq _).mp (ideal.le_of_pow_le_prime hPb)).symm),
+    (((is_dedekind_domain.dimension_le_one.prime_le_prime_iff_eq _).mp
+        (ideal.le_of_pow_le_prime hPa)).trans
+      ((is_dedekind_domain.dimension_le_one.prime_le_prime_iff_eq _).mp
+        (ideal.le_of_pow_le_prime hPb)).symm),
   { unfreezingI { rintro rfl }, contradiction },
   { exact (prime a).ne_zero },
   { exact (prime b).ne_zero },
@@ -237,8 +228,10 @@ ideal.quotient_inf_ring_equiv_pi_quotient _ (λ i j hij, ideal.coprime_of_no_pri
   haveI := hPp,
   haveI := ideal.is_prime_of_prime (prime i), haveI := ideal.is_prime_of_prime (prime j),
   exact coprime i j hij
-    (((ideal.prime_le_prime_iff_eq (prime i).ne_zero).mp (ideal.le_of_pow_le_prime hPi)).trans
-      ((ideal.prime_le_prime_iff_eq (prime j).ne_zero).mp (ideal.le_of_pow_le_prime hPj)).symm)
+    (((is_dedekind_domain.dimension_le_one.prime_le_prime_iff_eq (prime i).ne_zero).mp
+      (ideal.le_of_pow_le_prime hPi)).trans
+    ((is_dedekind_domain.dimension_le_one.prime_le_prime_iff_eq (prime j).ne_zero).mp
+     (ideal.le_of_pow_le_prime hPj)).symm)
 end))
 
 @[to_additive]
