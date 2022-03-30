@@ -58,35 +58,6 @@ open_locale pointwise
 
 open_locale matrix
 
-/-- Promote a surjective ring homomorphism to an equivalence by dividing out its kernel. -/
-noncomputable def ideal.lift_equiv {R S : Type*} [comm_ring R] [comm_ring S] (f : R →+* S)
-  (hf : function.surjective f)
-  (I : ideal R) (h : f.ker = I) : (R ⧸ I) ≃+* S :=
-ring_equiv.of_bijective (ideal.quotient.lift I f (λ x hx, f.mem_ker.mp (h.symm ▸ hx))) begin
-  split,
-  { rintro ⟨x⟩ ⟨y⟩ hxy,
-    simp only [submodule.quotient.quot_mk_eq_mk, ideal.quotient.mk_eq_mk] at *,
-    suffices : x - y ∈ I, { simpa only [ideal.quotient.eq, h] using this },
-    have : f (x - y) = 0, { simpa only [map_sub, sub_eq_zero] using hxy },
-    exact h ▸ f.mem_ker.mp this },
-  { intro y,
-    obtain ⟨x, hx⟩ := hf y,
-    use ideal.quotient.mk I x,
-    simpa using hx },
-end
-
-/-- Promote a surjective linear map to an equivalence by dividing out its kernel. -/
-noncomputable def submodule.lift_equiv {R M N : Type*} [comm_ring R] [add_comm_group M]
-  [add_comm_group N] [module R M] [module R N]
-  (f : M →ₗ[R] N) (hf : function.surjective f)
-  (p : submodule R M) (h : f.ker = p) : (M ⧸ p) ≃ₗ[R] N :=
-linear_equiv.of_bijective (p.liftq f h.ge)
-  (by { rintro ⟨x⟩ ⟨y⟩ hxy, simp only [submodule.quotient.quot_mk_eq_mk] at *,
-        suffices : x - y ∈ p, { simpa only [submodule.quotient.eq, h] using this },
-        have : f (x - y) = 0, { simpa only [map_sub, sub_eq_zero] using hxy },
-        exact h ▸ linear_map.mem_ker.mp this })
-  (by { intro y, obtain ⟨x, hx⟩ := hf y, use p.mkq x, simpa using hx })
-
 theorem ideal.is_prime.mul_mem_iff {R : Type*} [comm_semiring R] {I : ideal R} (hI : I.is_prime)
   {a b : R} : a * b ∈ I ↔ a ∈ I ∨ b ∈ I :=
 ⟨hI.mem_or_mem, λ h, h.cases_on (I.mul_mem_right b) (I.mul_mem_left a)⟩
@@ -128,22 +99,6 @@ end
 @[simp] lemma multiset.inter_repeat {α : Type*} [decidable_eq α] (s : multiset α) (x : α) (n : ℕ)  :
   s ∩ multiset.repeat x n = multiset.repeat x (min (s.count x) n) :=
 by rw [multiset.inter_comm, multiset.repeat_inter, min_comm]
-
-lemma count_normalized_factors_eq {M : Type*} [cancel_comm_monoid_with_zero M]
-  [nontrivial M] [decidable_eq M]
-  [normalization_monoid M] [unique_factorization_monoid M]
-  {p x : M} (hp : prime p) (hnorm : normalize p = p) {n : ℕ}
-  (hle : p^n ∣ x) (hlt : ¬ (p^(n+1) ∣ x)) :
-  (normalized_factors x).count p = n :=
-begin
-  letI : decidable_rel ((∣) : M → M → Prop) := λ _ _, classical.prop_decidable _,
-  by_cases hx0 : x = 0,
-  { simp [hx0] at hlt, contradiction },
-  rw [← enat.coe_inj],
-  convert (multiplicity_eq_count_normalized_factors hp.irreducible hx0).symm,
-  { exact hnorm.symm },
-  exact (multiplicity.eq_coe_iff.mpr ⟨hle, hlt⟩).symm
-end
 
 section
 open_locale classical
