@@ -64,23 +64,6 @@ lemma ideal.quotient.mk_mem_map_mk {R : Type*} [comm_ring R] {I J : ideal R} {x 
 by rw [← ideal.mem_comap, ideal.comap_map_of_surjective _ ideal.quotient.mk_surjective,
        ← ring_hom.ker_eq_comap_bot, ideal.mk_ker]
 
-@[simp] lemma multiset.repeat_inter {α : Type*} [decidable_eq α] (x : α) (n : ℕ) (s : multiset α) :
-  multiset.repeat x n ∩ s = multiset.repeat x (min n (s.count x)) :=
-begin
-  refine le_antisymm _ _,
-  { simp only [multiset.le_iff_count, multiset.count_inter, multiset.count_repeat],
-    intro a,
-    split_ifs with h,
-    { rw h },
-    { rw [nat.zero_min] } },
-  simp only [multiset.le_inter_iff, ← multiset.le_count_iff_repeat_le, multiset.count_inter,
-    multiset.count_repeat_self],
-end
-
-@[simp] lemma multiset.inter_repeat {α : Type*} [decidable_eq α] (s : multiset α) (x : α) (n : ℕ) :
-  s ∩ multiset.repeat x n = multiset.repeat x (min (s.count x) n) :=
-by rw [multiset.inter_comm, multiset.repeat_inter, min_comm]
-
 lemma char_zero.nsmul_eq_zero_iff {R : Type*} [semiring R] [no_zero_divisors R] [char_zero R]
   {n : ℕ} {x : R} :
   n • x = 0 ↔ n = 0 ∨ x = 0 :=
