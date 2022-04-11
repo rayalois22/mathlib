@@ -64,30 +64,6 @@ lemma ideal.quotient.mk_mem_map_mk {R : Type*} [comm_ring R] {I J : ideal R} {x 
 by rw [← ideal.mem_comap, ideal.comap_map_of_surjective _ ideal.quotient.mk_surjective,
        ← ring_hom.ker_eq_comap_bot, ideal.mk_ker]
 
-lemma char_zero.nsmul_eq_zero_iff {R : Type*} [semiring R] [no_zero_divisors R] [char_zero R]
-  {n : ℕ} {x : R} :
-  n • x = 0 ↔ n = 0 ∨ x = 0 :=
-⟨λ h, by rwa [nsmul_eq_mul, mul_eq_zero, nat.cast_eq_zero] at h,
- by { rintros (h | h); simp [h]}⟩
-
-lemma cardinal.nsmul_lt_omega_iff {n : ℕ} (hn : n ≠ 0) {a : cardinal} :
-  n • a < cardinal.omega ↔ a < cardinal.omega :=
-begin
-  cases n,
-  { contradiction },
-  clear hn,
-  induction n with n ih,
-  { simp },
-  rw [succ_nsmul, cardinal.add_lt_omega_iff, ih, and_self]
-end
-
-lemma finite_dimensional_iff_of_rank_eq_nsmul
-  {K V W : Type*} [field K] [add_comm_group V] [add_comm_group W] [module K V] [module K W]
-  {n : ℕ} (hn : n ≠ 0) (hVW : module.rank K V = n • module.rank K W) :
-  finite_dimensional K V ↔ finite_dimensional K W :=
-by simp only [finite_dimensional, ← is_noetherian.iff_fg, is_noetherian.iff_dim_lt_omega, hVW,
-  cardinal.nsmul_lt_omega_iff hn]
-
 end move_me
 
 section dec_eq
