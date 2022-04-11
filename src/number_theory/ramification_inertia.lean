@@ -88,11 +88,6 @@ lemma finite_dimensional_iff_of_rank_eq_nsmul
 by simp only [finite_dimensional, ← is_noetherian.iff_fg, is_noetherian.iff_dim_lt_omega, hVW,
   cardinal.nsmul_lt_omega_iff hn]
 
-@[simp] lemma normalized_factors_eq_factors {M : Type*} [cancel_comm_monoid_with_zero M]
-  [decidable_eq M] [unique_factorization_monoid M] [unique (Mˣ)] (x : M) :
-  normalized_factors x = factors x :=
-by { unfold normalized_factors, convert multiset.map_id (factors x), ext p, exact normalize_eq p }
-
 end move_me
 
 section dec_eq
