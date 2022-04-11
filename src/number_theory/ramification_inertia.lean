@@ -121,10 +121,8 @@ end
 lemma is_dedekind_domain.ramification_idx_eq_factors_count [is_domain S] [is_dedekind_domain S]
   (hp0 : map f p ≠ ⊥) (hP : P.is_prime) (hP0 : P ≠ ⊥) :
   ramification_idx f p P = (factors (map f p)).count P :=
-begin
-  rw [is_dedekind_domain.ramification_idx_eq_normalized_factors_count hp0 hP hP0,
-      normalized_factors_eq_factors],
-end
+by rw [is_dedekind_domain.ramification_idx_eq_normalized_factors_count hp0 hP hP0,
+       factors_eq_normalized_factors]
 
 lemma is_dedekind_domain.ramification_idx_ne_zero [is_domain S] [is_dedekind_domain S]
   (hp0 : map f p ≠ ⊥) (hP : P.is_prime) (le : map f p ≤ P) : ramification_idx f p P ≠ 0 :=
@@ -493,7 +491,7 @@ begin
     submodule.quotient.eq, linear_map.mem_range, subtype.ext_iff, subtype.coe_mk,
     submodule.coe_sub] at ⊢ h,
   rcases h with ⟨⟨⟨z⟩, hz⟩, h⟩,
-  rw [submodule.quotient.quot_mk_eq_mk, ideal.quotient.mk_eq_mk, ideal.quotient.mk_mem_map_mk,
+  rw [submodule.quotient.quot_mk_eq_mk, ideal.quotient.mk_eq_mk, ideal.mem_quotient_iff_mem_sup,
       sup_eq_left.mpr Pe_le_Pi1] at hz,
   rw [pow_quot_succ_inclusion_apply_coe, subtype.coe_mk, submodule.quotient.quot_mk_eq_mk,
       ideal.quotient.mk_eq_mk, ← map_sub, ideal.quotient.eq, ← sub_mul] at h,
@@ -509,7 +507,7 @@ begin
   rintro ⟨⟨⟨x⟩, hx⟩⟩,
   have Pe_le_Pi : P^e ≤ P^i := ideal.pow_le_pow hi.le,
   have Pe_le_Pi1 : P^e ≤ P^(i + 1) := ideal.pow_le_pow hi,
-  rw [submodule.quotient.quot_mk_eq_mk, ideal.quotient.mk_eq_mk, ideal.quotient.mk_mem_map_mk,
+  rw [submodule.quotient.quot_mk_eq_mk, ideal.quotient.mk_eq_mk, ideal.mem_quotient_iff_mem_sup,
       sup_eq_left.mpr Pe_le_Pi] at hx,
   suffices hx' : x ∈ ideal.span {a} ⊔ P^(i+1),
   { obtain ⟨y', hy', z, hz, rfl⟩ := submodule.mem_sup.mp hx',
