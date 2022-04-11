@@ -50,22 +50,6 @@ open finite_dimensional
 open ideal
 open unique_factorization_monoid
 
-section move_me
-
-open fractional_ideal
-
-open_locale pointwise
-
-open_locale matrix
-
-@[simp]
-lemma ideal.quotient.mk_mem_map_mk {R : Type*} [comm_ring R] {I J : ideal R} {x : R} :
-  ideal.quotient.mk I x ∈ J.map I^.quotient.mk ↔ x ∈ J ⊔ I :=
-by rw [← ideal.mem_comap, ideal.comap_map_of_surjective _ ideal.quotient.mk_surjective,
-       ← ring_hom.ker_eq_comap_bot, ideal.mk_ker]
-
-end move_me
-
 section dec_eq
 
 open_locale classical
