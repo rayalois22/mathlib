@@ -56,7 +56,7 @@ variables {F α β γ : Type*}
 
 namespace finset
 
-/-! ### `0`/`1` as sets -/
+/-! ### `0`/`1` as finsets -/
 
 section has_one
 variables [has_one α] {s : finset α} {a : α}
@@ -74,9 +74,11 @@ localized "attribute [instance] finset.has_one finset.has_zero" in pointwise
 @[to_additive] lemma one_mem_one : (1 : α) ∈ (1 : finset α) := mem_singleton_self _
 @[to_additive] lemma one_nonempty : (1 : finset α).nonempty := ⟨1, one_mem_one⟩
 @[simp, to_additive] protected lemma map_one {f : α ↪ β} : map f 1 = {f 1} := map_singleton f 1
-
-@[simp, to_additive]
-lemma image_one [decidable_eq β] {f : α → β} : image f 1 = {f 1} := image_singleton f 1
+@[simp, to_additive] lemma image_one [decidable_eq β] {f : α → β} : image f 1 = {f 1} :=
+image_singleton _ _
+@[to_additive] lemma subset_one_iff_eq : s ⊆ 1 ↔ s = ∅ ∨ s = 1 := subset_singleton_iff
+@[to_additive] lemma nonempty.subset_one_iff (h : s.nonempty) : s ⊆ 1 ↔ s = 1 :=
+h.subset_singleton_iff
 
 /-- The singleton operation as a `one_hom`. -/
 @[to_additive "The singleton operation as a `zero_hom`."]
@@ -823,8 +825,29 @@ protected def mul_distrib_mul_action_finset [monoid α] [monoid β] [mul_distrib
   mul_distrib_mul_action α (finset β) :=
 function.injective.mul_distrib_mul_action ⟨coe, coe_one, coe_mul⟩ coe_injective coe_smul_finset
 
+instance [decidable_eq α] [has_zero α] [has_mul α] [no_zero_divisors α] :
+  no_zero_divisors (finset α) :=
+coe_injective.no_zero_divisors _ coe_zero coe_mul
+
+instance [has_zero α] [has_zero β] [has_scalar α β] [no_zero_smul_divisors α β] :
+  no_zero_smul_divisors (finset α) (finset β) :=
+⟨λ s t h, begin
+  by_contra' H,
+  have hst : (s • t).nonempty := h.symm.subst zero_nonempty,
+  simp_rw [←hst.of_smul_left.subset_zero_iff, ←hst.of_smul_right.subset_zero_iff, not_subset,
+    mem_zero] at H,
+  obtain ⟨⟨a, hs, ha⟩, b, ht, hb⟩ := H,
+  have := subset_of_eq h,
+  exact (eq_zero_or_eq_zero_of_smul_eq_zero $ mem_zero.1 $ this $ smul_mem_smul hs ht).elim ha hb,
+end⟩
+
+instance no_zero_smul_divisors_finset [has_zero α] [has_zero β] [has_scalar α β]
+  [no_zero_smul_divisors α β] : no_zero_smul_divisors α (finset β) :=
+coe_injective.no_zero_smul_divisors _ coe_zero coe_smul_finset
+
 localized "attribute [instance] finset.distrib_mul_action_finset
-  finset.mul_distrib_mul_action_finset" in pointwise
+  finset.mul_distrib_mul_action_finset finset.no_zero_divisors finset.no_zero_smul_divisors
+  finset.no_zero_smul_divisors_finset" in pointwise
 
 end instances
 

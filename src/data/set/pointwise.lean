@@ -918,8 +918,39 @@ protected def mul_distrib_mul_action_set [monoid α] [monoid β] [mul_distrib_mu
 { smul_mul := λ _ _ _, image_image2_distrib $ smul_mul' _,
   smul_one := λ _, image_singleton.trans $ by rw [smul_one, singleton_one] }
 
-localized "attribute [instance] set.distrib_mul_action_set set.mul_distrib_mul_action_set"
-  in pointwise
+instance [has_zero α] [has_mul α] [no_zero_divisors α] : no_zero_divisors (set α) :=
+⟨λ s t h, begin
+  by_contra' H,
+  have hst : (s * t).nonempty := h.symm.subst zero_nonempty,
+  simp_rw [←hst.of_mul_left.subset_zero_iff, ←hst.of_mul_right.subset_zero_iff, not_subset,
+    mem_zero] at H,
+  obtain ⟨⟨a, hs, ha⟩, b, ht, hb⟩ := H,
+  exact (eq_zero_or_eq_zero_of_mul_eq_zero $ h.subset $ mul_mem_mul hs ht).elim ha hb,
+end⟩
+
+instance [has_zero α] [has_zero β] [has_scalar α β] [no_zero_smul_divisors α β] :
+  no_zero_smul_divisors (set α) (set β) :=
+⟨λ s t h, begin
+  by_contra' H,
+  have hst : (s • t).nonempty := h.symm.subst zero_nonempty,
+  simp_rw [←hst.of_smul_left.subset_zero_iff, ←hst.of_smul_right.subset_zero_iff, not_subset,
+    mem_zero] at H,
+  obtain ⟨⟨a, hs, ha⟩, b, ht, hb⟩ := H,
+  exact (eq_zero_or_eq_zero_of_smul_eq_zero $ h.subset $ smul_mem_smul hs ht).elim ha hb,
+end⟩
+
+instance no_zero_smul_divisors_set [has_zero α] [has_zero β] [has_scalar α β]
+  [no_zero_smul_divisors α β] : no_zero_smul_divisors α (set β) :=
+⟨λ a s h, begin
+  by_contra' H,
+  have hst : (a • s).nonempty := h.symm.subst zero_nonempty,
+  simp_rw [←hst.of_image.subset_zero_iff, not_subset, mem_zero] at H,
+  obtain ⟨ha, b, ht, hb⟩ := H,
+  exact (eq_zero_or_eq_zero_of_smul_eq_zero $ h.subset $ smul_mem_smul_set ht).elim ha hb,
+end⟩
+
+localized "attribute [instance] set.distrib_mul_action_set set.mul_distrib_mul_action_set
+  set.no_zero_divisors set.no_zero_smul_divisors set.no_zero_smul_divisors_set" in pointwise
 
 end smul
 
@@ -1126,27 +1157,41 @@ end comm_monoid
 
 end set
 
-open set
 open_locale pointwise
 
-section
+namespace set
 
 section smul_with_zero
-variables [has_zero α] [has_zero β] [smul_with_zero α β]
+variables [has_zero α] [has_zero β] [smul_with_zero α β] {s : set α} {t : set β}
+
+/-!
+Note that we have neither `smul_with_zero α (set β)` nor `smul_with_zero (set α) (set β)`
+because `0 * ∅ ≠ 0`.
+-/
+
+lemma smul_zero_subset (s : set α) : s • (0 : set β) ⊆ 0 := by simp [subset_def, mem_smul]
+lemma zero_smul_subset (t : set β) : (0 : set α) • t ⊆ 0 := by simp [subset_def, mem_smul]
+
+lemma nonempty.smul_zero (hs : s.nonempty) : s • (0 : set β) = 0 :=
+s.smul_zero_subset.antisymm $ by simpa [mem_smul] using hs
+
+lemma nonempty.zero_smul (ht : t.nonempty) : (0 : set α) • t = 0 :=
+t.zero_smul_subset.antisymm $ by simpa [mem_smul] using ht
 
 /-- A nonempty set is scaled by zero to the singleton set containing 0. -/
 lemma zero_smul_set {s : set β} (h : s.nonempty) : (0 : α) • s = (0 : set β) :=
 by simp only [← image_smul, image_eta, zero_smul, h.image_const, singleton_zero]
 
-lemma zero_smul_subset (s : set β) : (0 : α) • s ⊆ 0 := image_subset_iff.2 $ λ x _, zero_smul α x
+lemma zero_smul_set_subset (s : set β) : (0 : α) • s ⊆ 0 :=
+image_subset_iff.2 $ λ x _, zero_smul α x
 
 lemma subsingleton_zero_smul_set (s : set β) : ((0 : α) • s).subsingleton :=
-subsingleton_singleton.mono (zero_smul_subset s)
+subsingleton_singleton.mono $ zero_smul_set_subset s
 
 lemma zero_mem_smul_set {t : set β} {a : α} (h : (0 : β) ∈ t) : (0 : β) ∈ a • t :=
 ⟨0, h, smul_zero' _ _⟩
 
-variables [no_zero_smul_divisors α β] {s : set α} {t : set β} {a : α}
+variables [no_zero_smul_divisors α β] {a : α}
 
 lemma zero_mem_smul_iff : (0 : β) ∈ s • t ↔ (0 : α) ∈ s ∧ t.nonempty ∨ (0 : β) ∈ t ∧ s.nonempty :=
 begin
@@ -1169,19 +1214,11 @@ end
 
 end smul_with_zero
 
-lemma smul_add_set [monoid α] [add_monoid β] [distrib_mul_action α β] (c : α) (s t : set β) :
-  c • (s + t) = c • s + c • t :=
-image_add (distrib_mul_action.to_add_monoid_hom β c).to_add_hom
-
 section group
-variables [group α] [mul_action α β] {A B : set β} {a : α} {x : β}
+variables [group α] [mul_action α β] {s t A B : set β} {a : α} {x : β}
 
 @[simp, to_additive]
-lemma smul_mem_smul_set_iff : a • x ∈ a • A ↔ x ∈ A :=
-⟨λ h, begin
-  rw [←inv_smul_smul a x, ←inv_smul_smul a A],
-  exact smul_mem_smul_set h,
-end, smul_mem_smul_set⟩
+lemma smul_mem_smul_set_iff : a • x ∈ a • s ↔ x ∈ s := (mul_action.injective _).mem_set_image
 
 @[to_additive]
 lemma mem_smul_set_iff_inv_smul_mem : x ∈ a • A ↔ a⁻¹ • x ∈ A :=
@@ -1255,7 +1292,11 @@ eq_univ_of_forall $ λ b, ⟨a⁻¹ • b, trivial, smul_inv_smul₀ ha _⟩
 
 end group_with_zero
 
-end
+end set
+
+/-! ### Miscellaneous -/
+
+open set
 
 /-! Some lemmas about pointwise multiplication and submonoids. Ideally we put these in
   `group_theory.submonoid.basic`, but currently we cannot because that file is imported by this. -/

@@ -74,6 +74,7 @@ localized "attribute [instance] filter.has_one filter.has_zero" in pointwise
 @[to_additive] lemma one_ne_bot : (1 : filter α).ne_bot := filter.pure_ne_bot
 @[simp, to_additive] protected lemma map_one' (f : α → β) : (1 : filter α).map f = pure (f 1) := rfl
 @[simp, to_additive] lemma le_one_iff : f ≤ 1 ↔ (1 : set α) ∈ f := le_pure_iff
+@[to_additive] protected lemma ne_bot.le_one_iff (h : f.ne_bot) : f ≤ 1 ↔ f = 1 := h.le_pure_iff
 @[simp, to_additive] lemma eventually_one {p : α → Prop} : (∀ᶠ x in 1, p x) ↔ p 1 := eventually_pure
 @[simp, to_additive] lemma tendsto_one {a : filter β} {f : β → α} :
    tendsto f a 1 ↔ ∀ᶠ x in a, f x = 1 :=
@@ -232,7 +233,7 @@ protected def comm_semigroup [comm_semigroup α] : comm_semigroup (filter α) :=
   ..filter.semigroup }
 
 section mul_one_class
-variables [mul_one_class α] [mul_one_class β]
+variables [mul_one_class α] [mul_one_class β] {f g : filter α}
 
 /-- `filter α` is a `mul_one_class` under pointwise operations if `α` is. -/
 @[to_additive "`filter α` is an `add_zero_class` under pointwise operations if `α` is."]
@@ -277,7 +278,7 @@ def pure_monoid_hom : α →* filter α := { ..pure_mul_hom, ..pure_one_hom }
 end mul_one_class
 
 section monoid
-variables [monoid α] {f g : filter α} {s : set α} {a : α}
+variables [monoid α] {f g : filter α} {s : set α} {a : α} {m n : ℕ}
 
 /-- `filter α` is a `monoid` under pointwise operations if `α` is. -/
 @[to_additive "`filter α` is an `add_monoid` under pointwise operations if `α` is."]
@@ -289,6 +290,29 @@ localized "attribute [instance] filter.monoid filter.add_monoid" in pointwise
 @[to_additive] lemma pow_mem_pow (hs : s ∈ f) : ∀ n : ℕ, s ^ n ∈ f ^ n
 | 0 := by { rw pow_zero, exact one_mem_one }
 | (n + 1) := by { rw pow_succ, exact mul_mem_mul hs (pow_mem_pow _) }
+
+@[simp, to_additive nsmul_bot] lemma bot_pow {n : ℕ} (hn : n ≠ 0) : (⊥  : filter α) ^ n = ⊥ :=
+by rw [←tsub_add_cancel_of_le (nat.succ_le_of_lt $ nat.pos_of_ne_zero hn), pow_succ, bot_mul]
+
+@[simp, to_additive] lemma top_mul_top : (⊤ : filter α) * ⊤ = ⊤ :=
+begin
+  refine top_le_iff.1 _,
+  rintro s ⟨t₁, t₂, h₁, h₂, hs⟩,
+  rw mem_top at *,
+  rw [h₁, h₂, univ_mul_univ] at hs,
+  exact univ_subset_iff.1 hs,
+end
+
+--TODO: `to_additive` trips up on the `1 : ℕ` used in the pattern-matching.
+lemma nsmul_top {α : Type*} [add_monoid α] : ∀ {n : ℕ}, n ≠ 0 → n • (⊤ : filter α) = ⊤
+| 0 := λ h, (h rfl).elim
+| 1 := λ _, one_nsmul _
+| (n + 2) := λ _, by { rw [succ_nsmul, nsmul_top n.succ_ne_zero, top_add_top] }
+
+@[to_additive nsmul_top] lemma top_pow : ∀ {n : ℕ}, n ≠ 0 → (⊤ : filter α) ^ n = ⊤
+| 0 := λ h, (h rfl).elim
+| 1 := λ _, pow_one _
+| (n + 2) := λ _, by { rw [pow_succ, top_pow n.succ_ne_zero, top_mul_top] }
 
 @[to_additive] protected lemma _root_.is_unit.filter : is_unit a → is_unit (pure a : filter α) :=
 is_unit.map (pure_monoid_hom : α →* filter α)
@@ -354,6 +378,19 @@ protected def division_comm_monoid [division_comm_monoid α] : division_comm_mon
 
 localized "attribute [instance] filter.comm_monoid filter.add_comm_monoid filter.division_monoid
   filter.subtraction_monoid filter.division_comm_monoid filter.subtraction_comm_monoid" in pointwise
+
+section mul_zero_class
+variables [mul_zero_class α] {f g : filter α}
+
+/-! Note that `filter` is not a `mul_zero_class` because `0 * ⊥ ≠ 0`. -/
+
+lemma ne_bot.mul_zero (hf : f.ne_bot) : 0 ≤ f * 0 :=
+le_mul_iff.2 $ λ t₁ h₁ t₂ h₂, let ⟨a, ha⟩ := hf.nonempty_of_mem h₁ in ⟨_, _, ha, h₂, mul_zero _⟩
+
+lemma ne_bot.zero_mul (hg : g.ne_bot) : 0 ≤ 0 * g :=
+le_mul_iff.2 $ λ t₁ h₁ t₂ h₂, let ⟨b, hb⟩ := hg.nonempty_of_mem h₂ in ⟨_, _, h₁, hb, zero_mul _⟩
+
+end mul_zero_class
 
 section group
 variables [group α] [group β] [monoid_hom_class F α β] (m : F) {f g f₁ g₁ : filter α}
@@ -478,6 +515,7 @@ localized "attribute [instance] filter.has_scalar_filter filter.has_vadd_filter"
 @[simp, to_additive] lemma smul_filter_eq_bot_iff : a • f = ⊥ ↔ f = ⊥ := map_eq_bot_iff
 @[simp, to_additive] lemma smul_filter_ne_bot_iff : (a • f).ne_bot ↔ f.ne_bot := map_ne_bot_iff _
 @[to_additive] lemma ne_bot.smul_filter : f.ne_bot → (a • f).ne_bot := λ h, h.map _
+@[to_additive] lemma ne_bot.of_smul_filter : (a • f).ne_bot → f.ne_bot := ne_bot.of_map
 @[to_additive] lemma smul_filter_le_smul_filter (hf : f₁ ≤ f₂) : a • f₁ ≤ a • f₂ :=
 map_mono hf
 
@@ -522,9 +560,207 @@ instance is_central_scalar [has_scalar α β] [has_scalar αᵐᵒᵖ β] [is_ce
   is_central_scalar α (filter β) :=
 ⟨λ a f, congr_arg (λ m, map m f) $ by exact funext (λ _, op_smul_eq_smul _ _)⟩
 
-@[to_additive]
-instance [monoid α] [mul_action α β] : mul_action (filter α) (filter β) :=
-{ one_smul := λ f, by simp only [←pure_one, ←map₂_smul, map₂_pure_left, one_smul, map_id'],
+/-- A multiplicative action of a monoid `α` on a type `β` gives a multiplicative action of
+`filter α` on `filter β`. -/
+@[to_additive "An additive action of an additive monoid `α` on a type `β` gives an additive action
+of `filter α` on `filter β`"]
+protected def mul_action [monoid α] [mul_action α β] : mul_action (filter α) (filter β) :=
+{ one_smul := λ f, map₂_pure_left.trans $ by simp_rw [one_smul, map_id'],
   mul_smul := λ f g h, map₂_assoc mul_smul }
+
+/-- A multiplicative action of a monoid on a type `β` gives a multiplicative action on `filter β`.
+-/
+@[to_additive "An additive action of an additive monoid on a type `β` gives an additive action on
+`filter β`."]
+protected def mul_action_filter [monoid α] [mul_action α β] : mul_action α (filter β) :=
+{ mul_smul := λ a b f, by simp only [←map_smul, map_map, function.comp, ←mul_smul],
+  one_smul := λ f, by simp only [←map_smul, one_smul, map_id'] }
+
+localized "attribute [instance] filter.mul_action_filter filter.add_action_filter
+  filter.mul_action filter.add_action" in pointwise
+
+/-- A distributive multiplicative action of a monoid on an additive monoid `β` gives a distributive
+multiplicative action on `filter β`. -/
+protected def distrib_mul_action_filter [monoid α] [add_monoid β] [distrib_mul_action α β] :
+  distrib_mul_action α (filter β) :=
+{ smul_add := λ _ _ _, map_map₂_distrib $ smul_add _,
+  smul_zero := λ _, (map_pure _ _).trans $ by rw [smul_zero, pure_zero] }
+
+/-- A multiplicative action of a monoid on a monoid `β` gives a multiplicative action on `set β`. -/
+protected def mul_distrib_mul_action_filter [monoid α] [monoid β] [mul_distrib_mul_action α β] :
+  mul_distrib_mul_action α (set β) :=
+{ smul_mul := λ _ _ _, image_image2_distrib $ smul_mul' _,
+  smul_one := λ _, image_singleton.trans $ by rw [smul_one, singleton_one] }
+
+instance [has_zero α] [has_mul α] [no_zero_divisors α] : no_zero_divisors (filter α) :=
+⟨λ f g h, begin
+  by_contra' H,
+  have hfg : (f * g).ne_bot := h.symm.subst zero_ne_bot,
+  simp_rw [←hfg.of_mul_left.nonpos_iff, ←hfg.of_mul_right.nonpos_iff, filter.not_le,
+    mem_zero] at H,
+  obtain ⟨⟨s, hf, hs⟩, t, hg, ht⟩ := H,
+  exact (eq_zero_or_eq_zero_of_mul_eq_zero $ h.subset $ mul_mem_mul hs ht).elim ha hb,
+end⟩
+
+instance [has_zero α] [has_zero β] [has_scalar α β] [no_zero_smul_divisors α β] :
+  no_zero_smul_divisors (filter α) (filter β) :=
+⟨λ f g h, begin
+  by_contra' H,
+  have hst : (f • g).ne_bot := h.symm.subst zero_ne_bot,
+  simp_rw [←hst.of_smul_left.nonpos_iff, ←hst.of_smul_right.nonpos_iff, filter.not_le,
+    mem_zero] at H,
+  obtain ⟨⟨a, hs, ha⟩, b, ht, hb⟩ := H,
+  exact (eq_zero_or_eq_zero_of_smul_eq_zero $ h.subset $ smul_mem_smul hs ht).elim ha hb,
+end⟩
+
+instance no_zero_smul_divisors_filter [has_zero α] [has_zero β] [has_scalar α β]
+  [no_zero_smul_divisors α β] : no_zero_smul_divisors α (filter β) :=
+⟨λ a f h, begin
+  by_contra' H,
+  have hf : (a • f).ne_bot := h.symm.subst zero_ne_bot,
+  simp_rw [←hf.of_smul_filter.nonpos_iff, filter.not_le, mem_zero] at H,
+  obtain ⟨ha, t, ht, hf⟩ := H,
+  exact (eq_zero_or_eq_zero_of_smul_eq_zero $ h.subset $ smul_mem_smul_set ht).elim ha hb,
+end⟩
+
+localized "attribute [instance] filter.distrib_mul_action_filter
+  filter.mul_distrib_mul_action_filter" in pointwise
+
+section smul_with_zero
+variables [has_zero α] [has_zero β] [smul_with_zero α β] {f : filter α} {g : filter β} {a : α}
+
+/-!
+Note that we have neither `smul_with_zero α (set β)` nor `smul_with_zero (set α) (set β)`
+because `0 * ∅ ≠ 0`.
+-/
+
+lemma zero_smul_filter_le (s : set β) : (0 : α) • g ≤ 0 :=
+λ s hs, begin
+  rw [mem_smul_filter, eq_univ_iff_forall.2 (λ a, (_ : a ∈ (•) (0 : α) ⁻¹' s))],
+  { exact univ_mem },
+  rwa [mem_preimage, zero_smul],
+end
+
+lemma ne_bot.zero_smul_filter (hg : g.ne_bot) : (0 : α) • g = (0 : filter β) :=
+by simp only [←map_smul, image_eta, zero_smul, map_const, pure_zero]
+
+lemma ne_bot.smul_zero (hf : f.ne_bot) : 0 ≤ f • (0 : filter β) :=
+le_smul_iff.2 $ λ t₁ h₁ t₂ h₂, let ⟨a, ha⟩ := hf.nonempty_of_mem h₁ in ⟨_, _, ha, h₂, smul_zero' _ _⟩
+
+lemma ne_bot.zero_smul (hg : g.ne_bot) : 0 ≤ (0 : filter α) • g :=
+le_smul_iff.2 $ λ t₁ h₁ t₂ h₂, let ⟨b, hb⟩ := hg.nonempty_of_mem h₂ in ⟨_, _, h₁, hb, zero_smul _ _⟩
+
+lemma subsingleton_zero_smul_set (s : set β) : ((0 : α) • s).subsingleton :=
+subsingleton_singleton.mono $ zero_smul_set_subset s
+
+lemma zero_mem_smul_set (h : (0 : set β) ∈ g) : (0 : set β) ∈ a • g :=
+begin
+  rw mem_smul_filter,
+  refine mem_of_superset h _,
+  rw zero_subset,
+  exact smul_zero' _ _,
+end
+
+variables [no_zero_smul_divisors α β]
+
+lemma zero_mem_smul_iff :
+  (0 : set β) ∈ f • g ↔ (0 : set α) ∈ f ∧ g.ne_bot ∨ (0 : set β) ∈ g ∧ f.ne_bot :=
+begin
+  split,
+  { rintro ⟨a, b, ha, hb, h⟩,
+    obtain rfl | rfl := eq_zero_or_eq_zero_of_smul_eq_zero h,
+    { exact or.inl ⟨ha, b, hb⟩ },
+    { exact or.inr ⟨hb, a, ha⟩ } },
+  { rintro (⟨hs, b, hb⟩ | ⟨ht, a, ha⟩),
+    { exact ⟨0, b, hs, hb, zero_smul _ _⟩ },
+    { exact ⟨a, 0, ha, ht, smul_zero' _ _⟩ } }
+end
+
+lemma zero_mem_smul_set_iff (ha : a ≠ 0) : (0 : β) ∈ a • t ↔ (0 : β) ∈ t :=
+begin
+  refine ⟨_, zero_mem_smul_set⟩,
+  rintro ⟨b, hb, h⟩,
+  rwa (eq_zero_or_eq_zero_of_smul_eq_zero h).resolve_left ha at hb,
+end
+
+end smul_with_zero
+
+section group
+variables [group α] [mul_action α β] {s t A B : set β} {a : α} {x : β}
+
+@[simp, to_additive]
+lemma smul_mem_smul_set_iff : a • x ∈ a • s ↔ x ∈ s := (mul_action.injective _).mem_set_image
+
+@[to_additive]
+lemma mem_smul_set_iff_inv_smul_mem : x ∈ a • A ↔ a⁻¹ • x ∈ A :=
+show x ∈ mul_action.to_perm a '' A ↔ _, from mem_image_equiv
+
+@[to_additive]
+lemma mem_inv_smul_set_iff : x ∈ a⁻¹ • A ↔ a • x ∈ A :=
+by simp only [← image_smul, mem_image, inv_smul_eq_iff, exists_eq_right]
+
+@[to_additive]
+lemma preimage_smul (a : α) (t : set β) : (λ x, a • x) ⁻¹' t = a⁻¹ • t :=
+((mul_action.to_perm a).symm.image_eq_preimage _).symm
+
+@[to_additive]
+lemma preimage_smul_inv (a : α) (t : set β) : (λ x, a⁻¹ • x) ⁻¹' t = a • t :=
+preimage_smul (to_units a)⁻¹ t
+
+@[simp, to_additive]
+lemma set_smul_subset_set_smul_iff : a • A ⊆ a • B ↔ A ⊆ B :=
+image_subset_image_iff $ mul_action.injective _
+
+@[to_additive]
+lemma set_smul_subset_iff : a • A ⊆ B ↔ A ⊆ a⁻¹ • B :=
+(image_subset_iff).trans $ iff_of_eq $ congr_arg _ $
+  preimage_equiv_eq_image_symm _ $ mul_action.to_perm _
+
+@[to_additive]
+lemma subset_set_smul_iff : A ⊆ a • B ↔ a⁻¹ • A ⊆ B :=
+iff.symm $ (image_subset_iff).trans $ iff.symm $ iff_of_eq $ congr_arg _ $
+  image_equiv_eq_preimage_symm _ $ mul_action.to_perm _
+
+end group
+
+section group_with_zero
+variables [group_with_zero α] [mul_action α β] {s : set α} {a : α}
+
+@[simp] lemma smul_mem_smul_set_iff₀ (ha : a ≠ 0) (A : set β)
+  (x : β) : a • x ∈ a • A ↔ x ∈ A :=
+show units.mk0 a ha • _ ∈ _ ↔ _, from smul_mem_smul_set_iff
+
+lemma mem_smul_set_iff_inv_smul_mem₀ (ha : a ≠ 0) (A : set β) (x : β) :
+  x ∈ a • A ↔ a⁻¹ • x ∈ A :=
+show _ ∈ units.mk0 a ha • _ ↔ _, from mem_smul_set_iff_inv_smul_mem
+
+lemma mem_inv_smul_set_iff₀ (ha : a ≠ 0) (A : set β) (x : β) : x ∈ a⁻¹ • A ↔ a • x ∈ A :=
+show _ ∈ (units.mk0 a ha)⁻¹ • _ ↔ _, from mem_inv_smul_set_iff
+
+lemma preimage_smul₀ (ha : a ≠ 0) (t : set β) : (λ x, a • x) ⁻¹' t = a⁻¹ • t :=
+preimage_smul (units.mk0 a ha) t
+
+lemma preimage_smul_inv₀ (ha : a ≠ 0) (t : set β) :
+  (λ x, a⁻¹ • x) ⁻¹' t = a • t :=
+preimage_smul ((units.mk0 a ha)⁻¹) t
+
+@[simp] lemma set_smul_subset_set_smul_iff₀ (ha : a ≠ 0) {A B : set β} :
+  a • A ⊆ a • B ↔ A ⊆ B :=
+show units.mk0 a ha • _ ⊆ _ ↔ _, from set_smul_subset_set_smul_iff
+
+lemma set_smul_subset_iff₀ (ha : a ≠ 0) {A B : set β} : a • A ⊆ B ↔ A ⊆ a⁻¹ • B :=
+show units.mk0 a ha • _ ⊆ _ ↔ _, from set_smul_subset_iff
+
+lemma subset_set_smul_iff₀ (ha : a ≠ 0) {A B : set β} : A ⊆ a • B ↔ a⁻¹ • A ⊆ B :=
+show _ ⊆ units.mk0 a ha • _ ↔ _, from subset_set_smul_iff
+
+lemma smul_univ₀ (hs : ¬ s ⊆ 0) : s • (univ : set β) = univ :=
+let ⟨a, ha, ha₀⟩ := not_subset.1 hs in eq_univ_of_forall $ λ b,
+  ⟨a, a⁻¹ • b, ha, trivial, smul_inv_smul₀ ha₀ _⟩
+
+lemma smul_set_univ₀ (ha : a ≠ 0) : a • (univ : set β) = univ :=
+eq_univ_of_forall $ λ b, ⟨a⁻¹ • b, trivial, smul_inv_smul₀ ha _⟩
+
+end group_with_zero
 
 end filter
