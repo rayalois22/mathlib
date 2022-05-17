@@ -217,6 +217,10 @@ lemma is_open_map_coe  : is_open_map (coe : X → alexandroff X) :=
 lemma open_embedding_coe : open_embedding (coe : X → alexandroff X) :=
 open_embedding_of_continuous_injective_open continuous_coe coe_injective is_open_map_coe
 
+lemma embedding_coe : embedding (coe : X → alexandroff X) := open_embedding_coe.to_embedding
+
+lemma inducing_coe : inducing (coe : X → alexandroff X) := embedding_coe.to_inducing
+
 lemma is_open_range_coe : is_open (range (coe : X → alexandroff X)) :=
 open_embedding_coe.open_range
 
@@ -352,12 +356,11 @@ instance [t0_space X] : t0_space (alexandroff X) :=
 begin
   refine ⟨λ x y hxy, _⟩,
   induction x using alexandroff.rec; induction y using alexandroff.rec,
-  { exact (hxy rfl).elim },
-  { use {∞}ᶜ, simp [is_closed_infty] },
-  { use {∞}ᶜ, simp [is_closed_infty] },
-  { rcases t0_space.t0 x y (mt coe_eq_coe.mpr hxy) with ⟨U, hUo, hU⟩,
-    refine ⟨coe '' U, is_open_image_coe.2 hUo, _⟩,
-    simpa [coe_eq_coe] }
+  { refl },
+  { exact absurd hxy (is_closed_infty.not_inseparable rfl (coe_ne_infty _)) },
+  { exact absurd hxy.symm (is_closed_infty.not_inseparable rfl (coe_ne_infty _)) },
+  { rw inducing_coe.inseparable_iff at hxy,
+    rw hxy.eq }
 end
 
 /-- The one point compactification of a `t1_space` space is a `t1_space`. -/
