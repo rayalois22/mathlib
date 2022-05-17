@@ -24,6 +24,7 @@ open category_theory.limits category_theory.category category_theory.functor
 open algebraic_geometry
 open topological_space
 open opposite
+open_locale topological_space
 
 variables {C : Type u} [category.{v} C] [has_colimits C]
 
@@ -190,7 +191,7 @@ as_iso (stalk_map α.hom x)
 
 @[simp, reassoc, elementwise]
 lemma stalk_specializes_stalk_map {X Y : PresheafedSpace C} (f : X ⟶ Y) {x y : X} (h : x ⤳ y) :
-  Y.presheaf.stalk_specializes (f.base.map_specialization h) ≫ stalk_map f x =
+  Y.presheaf.stalk_specializes (f.base.map_specializes h) ≫ stalk_map f x =
     stalk_map f y ≫ X.presheaf.stalk_specializes h :=
 by { delta PresheafedSpace.stalk_map, simp [stalk_map] }
 

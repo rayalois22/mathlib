@@ -45,7 +45,7 @@ and Chris Hughes (on an earlier repository).
 -/
 
 noncomputable theory
-open_locale classical
+open_locale classical topological_space
 
 universes u v
 
@@ -736,11 +736,11 @@ by rw [← as_ideal_le_as_ideal, ← zero_locus_vanishing_ideal_eq_closure,
 
 lemma le_iff_specializes (x y : prime_spectrum R) :
   x ≤ y ↔ x ⤳ y :=
-le_iff_mem_closure x y
+(le_iff_mem_closure x y).trans specializes_iff_mem_closure.symm
 
 instance : t0_space (prime_spectrum R) :=
-by { simp [t0_space_iff_or_not_mem_closure, ← le_iff_mem_closure,
-  ← not_and_distrib, ← le_antisymm_iff, eq_comm] }
+⟨λ x y h, le_antisymm ((le_iff_specializes _ _).2 h.specializes)
+  ((le_iff_specializes _ _).2 h.specializes')⟩
 
 end order
 

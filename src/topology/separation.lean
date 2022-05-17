@@ -452,16 +452,19 @@ instance subtype.t1_space {α : Type u} [topological_space α] [t1_space α] {p 
   t1_space (subtype p) :=
 embedding_subtype_coe.t1_space
 
-@[simp] lemma specializes_iff [t1_space α] {a b : α} : a ⤳ b ↔ a = b :=
+lemma specializes_iff_eq [t1_space α] {a b : α} : a ⤳ b ↔ a = b :=
 ⟨λ h, eq.symm $ h.mem_closed is_closed_singleton rfl, λ h, h ▸ le_rfl⟩
 
-alias specializes_iff ↔ specializes.eq _
+alias specializes_iff_eq ↔ specializes.eq _
+
+@[simp] lemma specializes_eq_eq [t1_space α] : (⤳) = @eq α :=
+funext₂ $ λ x y, propext specializes_iff_eq
 
 @[simp] lemma pure_le_nhds_iff [t1_space α] {a b : α} : pure a ≤ 𝓝 b ↔ a = b :=
-specializes_iff_pure.symm.trans specializes_iff
+specializes_iff_pure.symm.trans specializes_iff_eq
 
 @[simp] lemma nhds_le_nhds_iff [t1_space α] {a b : α} : 𝓝 a ≤ 𝓝 b ↔ a = b :=
-specializes_iff
+specializes_iff_eq
 
 @[priority 100] -- see Note [lower instance priority]
 instance t1_space.t0_space [t1_space α] : t0_space α := ⟨λ x y h, h.specializes.eq⟩

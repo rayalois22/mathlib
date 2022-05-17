@@ -157,7 +157,8 @@ equivalent properties hold:
 - `𝓝 x = 𝓝 y`; we use this property as the definition;
 - for any open set `s`, `x ∈ s ↔ y ∈ s`, see `inseparable_iff_open`;
 - for any closed set `s`, `x ∈ s ↔ y ∈ s`, see `inseparable_iff_closed`;
-- `x ∈ closure {y}` and `y ∈ closure {x}`, see `inseparable_iff_mem_closure`.
+- `x ∈ closure {y}` and `y ∈ closure {x}`, see `inseparable_iff_mem_closure`;
+- `closure {x} = closure {y}`, see `inseparable_iff_closure_eq`.
 -/
 def inseparable (x y : X) : Prop := 𝓝 x = 𝓝 y
 
@@ -187,6 +188,10 @@ by simp only [inseparable_iff_specializes_and, specializes_iff_forall_closed, �
 lemma inseparable_iff_mem_closure :
   x ~ y ↔ x ∈ closure ({y} : set X) ∧ y ∈ closure ({x} : set X) :=
 inseparable_iff_specializes_and.trans $ by simp only [specializes_iff_mem_closure, and_comm]
+
+lemma inseparable_iff_closure_eq : x ~ y ↔ closure ({x} : set X) = closure {y} :=
+by simp only [inseparable_iff_specializes_and, specializes_iff_closure_subset,
+  ← subset_antisymm_iff, eq_comm]
 
 lemma inseparable_of_nhds_within_eq (hx : x ∈ s) (hy : y ∈ s) (h : 𝓝[s] x = 𝓝[s] y) : x ~ y :=
 (specializes_of_nhds_within h.le hx).antisymm (specializes_of_nhds_within h.ge hy)

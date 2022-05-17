@@ -54,6 +54,7 @@ open Top
 open topological_space
 open category_theory
 open opposite
+open_locale topological_space
 
 namespace algebraic_geometry
 
