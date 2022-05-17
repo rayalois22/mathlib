@@ -168,9 +168,23 @@ lemma t0_space_def (α : Type u) [topological_space α] :
 lemma inseparable.eq [t0_space α] {x y : α} (h : inseparable x y) : x = y :=
 t0_space.t0 x y h
 
+lemma nhds_injective [t0_space α] : function.injective (𝓝 : α → filter α) :=
+λ x y, inseparable.eq
+
+lemma inseparable_iff_eq [t0_space α] {x y : α} : inseparable x y ↔ x = y :=
+nhds_injective.eq_iff
+
+@[simp] lemma inseparable_eq_eq [t0_space α] : inseparable = @eq α :=
+funext₂ $ λ x y, propext inseparable_iff_eq
+
+/-- Specialization forms a partial order on a t0 topological space. -/
+def specialization_order [t0_space α] : partial_order α :=
+{ le_antisymm := λ _ _ h₁ h₂, (specializes.antisymm h₂ h₁).eq,
+  .. specialization_preorder α }
+
 lemma exists_is_open_xor_mem [t0_space α] {x y : α} (h : x ≠ y) :
   ∃ U : set α, is_open U ∧ xor (x ∈ U) (y ∈ U) :=
-not_inseparable_iff_open.1 $ mt inseparable.eq h
+not_inseparable_iff_exists_open.1 $ mt inseparable.eq h
 
 theorem minimal_nonempty_closed_eq_singleton [t0_space α] {s : set α} (hs : is_closed s)
   (hne : s.nonempty) (hmin : ∀ t ⊆ s, t.nonempty → is_closed t → t = s) :
@@ -248,6 +262,20 @@ by simp only [t0_space_def, ← not_and_distrib, ← inseparable_iff_mem_closure
 instance : t0_space (separation_quotient α) :=
 ⟨λ x y, quotient.induction_on₂' x y $ λ a b h,
   separation_quotient.mk_eq_mk.2 $ separation_quotient.inducing_mk.inseparable_iff.1 h⟩
+
+lemma t0_space.of_cover (h : ∀ x y, inseparable x y → ∃ s : set α, x ∈ s ∧ y ∈ s ∧ t0_space s) :
+  t0_space α :=
+begin
+  refine ⟨λ x y hxy, _⟩,
+  rcases h x y hxy with ⟨s, hxs, hys, hs⟩, resetI,
+  lift x to s using hxs, lift y to s using hys,
+  rw ← subtype_inseparable_iff at hxy,
+  exact congr_arg coe hxy.eq
+end
+
+lemma t0_space.of_open_cover (h : ∀ x, ∃ s : set α, x ∈ s ∧ is_open s ∧ t0_space s) : t0_space α :=
+t0_space.of_cover $ λ x y hxy,
+  let ⟨s, hxs, hso, hs⟩ := h x in ⟨s, hxs, (hxy.mem_open_iff hso).1 hxs, hs⟩
 
 /-- A T₁ space, also known as a Fréchet space, is a topological space
   where every singleton set is closed. Equivalently, for every pair
@@ -424,9 +452,19 @@ instance subtype.t1_space {α : Type u} [topological_space α] [t1_space α] {p 
   t1_space (subtype p) :=
 embedding_subtype_coe.t1_space
 
+@[simp] lemma specializes_iff [t1_space α] {a b : α} : a ⤳ b ↔ a = b :=
+⟨λ h, eq.symm $ h.mem_closed is_closed_singleton rfl, λ h, h ▸ le_rfl⟩
+
+alias specializes_iff ↔ specializes.eq _
+
+@[simp] lemma pure_le_nhds_iff [t1_space α] {a b : α} : pure a ≤ 𝓝 b ↔ a = b :=
+specializes_iff_pure.symm.trans specializes_iff
+
+@[simp] lemma nhds_le_nhds_iff [t1_space α] {a b : α} : 𝓝 a ≤ 𝓝 b ↔ a = b :=
+specializes_iff
+
 @[priority 100] -- see Note [lower instance priority]
-instance t1_space.t0_space [t1_space α] : t0_space α :=
-⟨λ x y h, (h.mem_closed_iff is_closed_singleton).2 rfl⟩
+instance t1_space.t0_space [t1_space α] : t0_space α := ⟨λ x y h, h.specializes.eq⟩
 
 @[simp] lemma compl_singleton_mem_nhds_iff [t1_space α] {x y : α} : {x}ᶜ ∈ 𝓝 y ↔ y ≠ x :=
 is_open_compl_singleton.mem_nhds_iff
@@ -461,20 +499,6 @@ begin
   rcases h.mem_iff.1 (compl_singleton_mem_nhds hy.symm) with ⟨i, hi, hsub⟩,
   exact ⟨i, hi, λ h, hsub h rfl⟩
 end
-
-@[simp] lemma pure_le_nhds_iff [t1_space α] {a b : α} : pure a ≤ 𝓝 b ↔ a = b :=
-begin
-  refine ⟨λ h, _, λ h, h ▸ pure_le_nhds a⟩,
-  by_contra hab,
-  simpa only [mem_pure, mem_compl_iff, mem_singleton, not_true] using
-    h (compl_singleton_mem_nhds $ ne.symm hab)
-end
-
-@[simp] lemma nhds_le_nhds_iff [t1_space α] {a b : α} : 𝓝 a ≤ 𝓝 b ↔ a = b :=
-⟨λ h, pure_le_nhds_iff.mp $ (pure_le_nhds a).trans h, λ h, h ▸ le_rfl⟩
-
-@[simp] lemma nhds_eq_nhds_iff [t1_space α] {a b : α} : 𝓝 a = 𝓝 b ↔ a = b :=
-⟨λ h, nhds_le_nhds_iff.mp h.le, λ h, h ▸ rfl⟩
 
 @[simp] lemma compl_singleton_mem_nhds_set_iff [t1_space α] {x : α} {s : set α} :
   {x}ᶜ ∈ 𝓝ˢ s ↔ x ∉ s :=

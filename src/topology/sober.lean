@@ -30,55 +30,6 @@ variables {α β : Type*} [topological_space α] [topological_space β]
 
 section specialize_order
 
-/-- `x` specializes to `y` if `y` is in the closure of `x`. The notation used is `x ⤳ y`. -/
-def specializes (x y : α) : Prop := y ∈ closure ({x} : set α)
-
-infix ` ⤳ `:300 := specializes
-
-lemma specializes_def (x y : α) : x ⤳ y ↔ y ∈ closure ({x} : set α) := iff.rfl
-
-lemma specializes_iff_closure_subset {x y : α} :
-  x ⤳ y ↔ closure ({y} : set α) ⊆ closure ({x} : set α) :=
-is_closed_closure.mem_iff_closure_subset
-
-lemma specializes_rfl {x : α} : x ⤳ x := subset_closure (set.mem_singleton x)
-
-lemma specializes_refl (x : α) : x ⤳ x := specializes_rfl
-
-lemma specializes.trans {x y z : α} : x ⤳ y → y ⤳ z → x ⤳ z :=
-by { simp_rw specializes_iff_closure_subset, exact λ a b, b.trans a }
-
-lemma specializes_iff_forall_closed {x y : α} :
-  x ⤳ y ↔ ∀ (Z : set α) (h : is_closed Z), x ∈ Z → y ∈ Z :=
-begin
-  split,
-  { intros h Z hZ,
-    rw [hZ.mem_iff_closure_subset, hZ.mem_iff_closure_subset],
-    exact (specializes_iff_closure_subset.mp h).trans },
-  { intro h, exact h _ is_closed_closure (subset_closure $ set.mem_singleton x) }
-end
-
-lemma specializes_iff_forall_open {x y : α} :
-  x ⤳ y ↔ ∀ (U : set α) (h : is_open U), y ∈ U → x ∈ U :=
-begin
-  rw specializes_iff_forall_closed,
-  exact ⟨λ h U hU, not_imp_not.mp (h _ (is_closed_compl_iff.mpr hU)),
-    λ h U hU, not_imp_not.mp (h _ (is_open_compl_iff.mpr hU))⟩,
-end
-
-lemma indistinguishable_iff_specializes_and (x y : α) :
-  indistinguishable x y ↔ x ⤳ y ∧ y ⤳ x :=
-(indistinguishable_iff_closure x y).trans (and_comm _ _)
-
-lemma specializes_antisymm [t0_space α] (x y : α) : x ⤳ y → y ⤳ x → x = y :=
-λ h₁ h₂, ((indistinguishable_iff_specializes_and _ _).mpr ⟨h₁, h₂⟩).eq
-
-lemma specializes.map {x y : α} (h : x ⤳ y) {f : α → β} (hf : continuous f) : f x ⤳ f y :=
-begin
-  rw [specializes_def, ← set.image_singleton],
-  exact image_closure_subset_closure_image hf ⟨_, h, rfl⟩,
-end
-
 lemma continuous_map.map_specialization {x y : α} (h : x ⤳ y) (f : C(α, β)) : f x ⤳ f y :=
 h.map f.2
 

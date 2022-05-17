@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2022 Yury Kudryashov. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Yury Kudryashov
+Authors: Yury Kudryashov, Andrew Yang
 -/
 import topology.continuous_on
 import data.setoid.basic
@@ -37,51 +37,119 @@ open_locale topological_space
 variables {X Y : Type*} [topological_space X] [topological_space Y] {x y z : X}
   {s : set X} {f : X → Y}
 
-lemma nhds_le_nhds_tfae (x y : X) :
-  tfae [𝓝 x ≤ 𝓝 y,
+/-- `x` specializes to `y` (notation: `x ⤳ y`) if either of the following equivalent properties
+hold:
+
+* `𝓝 x ≤ 𝓝 y`; this property is used as the definition;
+* `pure x ≤ 𝓝 y`; in other words, any neighbourhood of `y` contains `x`;
+* `y ∈ closure {x}`;
+* `closure {y} ⊆ closure {x}`;
+* for any closed set `s` we have `x ∈ s → y ∈ s`;
+* for any open set `s` we have `y ∈ s → x ∈ s`;
+* `y` is a cluster point of the filter `pure x = 𝓟 {x}`.
+
+This relation defines a `preorder` on `X`. If `X` is a T₀ space, then this preorder is a partial
+order. If `X` is a T₁ space, then this partial order is trivial : `x ⤳ y ↔ x = y`. -/
+def specializes (x y : X) : Prop := 𝓝 x ≤ 𝓝 y
+
+localized "infix ` ⤳ `:300 := specializes" in topological_space
+
+lemma specializes_tfae (x y : X) :
+  tfae [x ⤳ y,
     pure x ≤ 𝓝 y,
     ∀ s : set X, is_open s → y ∈ s → x ∈ s,
     ∀ s : set X, is_closed s → x ∈ s → y ∈ s,
     y ∈ closure ({x} : set X),
+    closure ({y} : set X) ⊆ closure {x},
     cluster_pt y (pure x)] :=
 begin
   tfae_have : 1 → 2, from (pure_le_nhds _).trans,
   tfae_have : 2 → 3, from λ h s hso hy, h (hso.mem_nhds hy),
   tfae_have : 3 → 4, from λ h s hsc hx, of_not_not $ λ hy, h sᶜ hsc.is_open_compl hy hx,
   tfae_have : 4 → 5, from λ h, h _ is_closed_closure (subset_closure $ mem_singleton _),
-  tfae_have : 5 ↔ 6, by rw [mem_closure_iff_cluster_pt, principal_singleton],
-  tfae_have : 6 → 1,
+  tfae_have : 6 ↔ 5, from is_closed_closure.closure_subset_iff.trans singleton_subset_iff,
+  tfae_have : 5 ↔ 7, by rw [mem_closure_iff_cluster_pt, principal_singleton],
+  tfae_have : 5 → 1,
   { refine λ h, (nhds_basis_opens _).ge_iff.2 _,
     rintro s ⟨hy, ho⟩,
-    have := cluster_pt_iff.1 h (ho.mem_nhds hy) (mem_pure.2 $ mem_singleton _),
-    exact ho.mem_nhds (inter_singleton_nonempty.1 this) },
+    rcases mem_closure_iff.1 h s ho hy with ⟨z, hxs, (rfl : z = x)⟩,
+    exact ho.mem_nhds hxs },
   tfae_finish
 end
 
-lemma nhds_le_nhds_iff_pure : 𝓝 x ≤ 𝓝 y ↔ pure x ≤ 𝓝 y :=
-(nhds_le_nhds_tfae x y).out 0 1
+lemma specializes_iff_nhds : x ⤳ y ↔ 𝓝 x ≤ 𝓝 y := iff.rfl
+lemma specializes_iff_pure : x ⤳ y ↔ pure x ≤ 𝓝 y := (specializes_tfae x y).out 0 1
 
-lemma nhds_le_nhds_iff_open : 𝓝 x ≤ 𝓝 y ↔ ∀ ⦃s : set X⦄, is_open s → y ∈ s → x ∈ s :=
-(nhds_le_nhds_tfae x y).out 0 2
+alias specializes_iff_nhds ↔ specializes.nhds_le_nhds _
+alias specializes_iff_pure ↔ specializes.pure_le_nhds _
 
-lemma nhds_le_nhds_iff_closed : 𝓝 x ≤ 𝓝 y ↔ ∀ ⦃s : set X⦄, is_closed s → x ∈ s → y ∈ s :=
-(nhds_le_nhds_tfae x y).out 0 3
+lemma specializes_iff_forall_open : x ⤳ y ↔ ∀ s : set X, is_open s → y ∈ s → x ∈ s :=
+(specializes_tfae x y).out 0 2
 
-lemma nhds_le_nhds_iff_mem_closure : 𝓝 x ≤ 𝓝 y ↔ y ∈ closure ({x} : set X) :=
-(nhds_le_nhds_tfae x y).out 0 4
+lemma specializes.mem_open (h : x ⤳ y) (hs : is_open s) (hy : y ∈ s) : x ∈ s :=
+specializes_iff_forall_open.1 h s hs hy
 
-lemma nhds_le_nhds_iff_cluster_pt : 𝓝 x ≤ 𝓝 y ↔ cluster_pt y (pure x) :=
-(nhds_le_nhds_tfae x y).out 0 5
+lemma is_open.not_specializes (hs : is_open s) (hx : x ∉ s) (hy : y ∈ s) : ¬ x ⤳ y :=
+λ h, hx $ h.mem_open hs hy
 
-lemma nhds_le_nhds_of_nhds_within (h₁ : 𝓝[s] x ≤ 𝓝[s] y) (h₂ : x ∈ s) : 𝓝 x ≤ 𝓝 y :=
-nhds_le_nhds_iff_pure.2 $
+lemma specializes_iff_forall_closed : x ⤳ y ↔ ∀ s : set X, is_closed s → x ∈ s → y ∈ s :=
+(specializes_tfae x y).out 0 3
+
+lemma specializes.mem_closed (h : x ⤳ y) (hs : is_closed s) (hx : x ∈ s) : y ∈ s :=
+specializes_iff_forall_closed.1 h s hs hx
+
+lemma is_closed.not_specializes (hs : is_closed s) (hx : x ∈ s) (hy : y ∉ s) : ¬ x ⤳ y :=
+λ h, hy $ h.mem_closed hs hx
+
+lemma specializes_iff_mem_closure : x ⤳ y ↔ y ∈ closure ({x} : set X) :=
+(specializes_tfae x y).out 0 4
+
+alias specializes_iff_mem_closure ↔ specializes.mem_closure _
+
+lemma specializes_iff_closure_subset :
+  x ⤳ y ↔ closure ({y} : set X) ⊆ closure {x} :=
+(specializes_tfae x y).out 0 5
+
+alias specializes_iff_closure_subset ↔ specializes.closure_subset _
+
+lemma specializes_rfl : x ⤳ x := le_rfl
+
+@[refl] lemma specializes_refl (x : X) : x ⤳ x := specializes_rfl
+
+@[trans] lemma specializes.trans : x ⤳ y → y ⤳ z → x ⤳ z := le_trans
+
+lemma specializes_of_nhds_within (h₁ : 𝓝[s] x ≤ 𝓝[s] y) (h₂ : x ∈ s) : x ⤳ y :=
+specializes_iff_pure.2 $
 calc pure x ≤ 𝓝[s] x : le_inf (pure_le_nhds _) (le_principal_iff.2 h₂)
         ... ≤ 𝓝[s] y : h₁
         ... ≤ 𝓝 y    : inf_le_left
 
-lemma nhds_le_nhds_of_continuous_at (h : 𝓝 x ≤ 𝓝 y) (hy : continuous_at f y) :
-  𝓝 (f x) ≤ 𝓝 (f y) :=
-nhds_le_nhds_iff_pure.2 $ λ s hs, mem_pure.2 $ mem_preimage.1 $ mem_of_mem_nhds $ hy.mono_left h hs
+lemma specializes.map_of_continuous_at (h : x ⤳ y) (hy : continuous_at f y) : f x ⤳ f y :=
+specializes_iff_pure.2 $ λ s hs, mem_pure.2 $ mem_preimage.1 $ mem_of_mem_nhds $ hy.mono_left h hs
+
+lemma specializes.map (h : x ⤳ y) (hf : continuous f) : f x ⤳ f y :=
+h.map_of_continuous_at hf.continuous_at
+
+lemma inducing.specializes_iff (hf : inducing f) : f x ⤳ f y ↔ x ⤳ y :=
+by simp only [specializes_iff_mem_closure, hf.closure_eq_preimage_closure_image, image_singleton,
+  mem_preimage]
+
+lemma subtype_specializes_iff {p : X → Prop} (x y : subtype p) : x ⤳ y ↔ (x : X) ⤳ y :=
+inducing_coe.specializes_iff.symm
+
+variable (X)
+
+/-- Specialization forms a preorder on the topological space. -/
+def specialization_preorder : preorder X :=
+{ le := λ x y, y ⤳ x,
+  le_refl := λ x, specializes_refl x,
+  le_trans := λ _ _ _ h₁ h₂, h₂.trans h₁ }
+
+variable {X}
+
+lemma continuous.specialization_monotone (hf : continuous f) :
+  @monotone _ _ (specialization_preorder X) (specialization_preorder Y) f :=
+λ x y h, h.map hf
 
 /-- Two points `x` and `y` in a topological space are `inseparable` if any of the following
 equivalent properties hold:
@@ -97,27 +165,37 @@ local infix ` ~ ` := inseparable
 
 lemma inseparable_def : x ~ y ↔ 𝓝 x = 𝓝 y := iff.rfl
 
-lemma inseparable_iff_open : x ~ y ↔ ∀ s : set X, is_open s → (x ∈ s ↔ y ∈ s) :=
-by simp only [inseparable, le_antisymm_iff, nhds_le_nhds_iff_open, ← forall_and_distrib, ← iff_def,
-  iff.comm]
+lemma inseparable_iff_specializes_and : x ~ y ↔ x ⤳ y ∧ y ⤳ x := le_antisymm_iff
 
-lemma not_inseparable_iff_open : ¬(x ~ y) ↔ ∃ s : set X, is_open s ∧ xor (x ∈ s) (y ∈ s) :=
-by simp [inseparable_iff_open, ← xor_iff_not_iff]
+lemma inseparable.specializes (h : x ~ y) : x ⤳ y := h.le
 
-lemma inseparable_iff_closed : x ~ y ↔ ∀ s : set X, is_closed s → (x ∈ s ↔ y ∈ s) :=
-by simp only [inseparable, le_antisymm_iff, nhds_le_nhds_iff_closed, ← forall_and_distrib,
+lemma inseparable.specializes' (h : x ~ y) : y ⤳ x := h.ge
+
+lemma specializes.antisymm (h₁ : x ⤳ y) (h₂ : y ⤳ x) : x ~ y := le_antisymm h₁ h₂
+
+lemma inseparable_iff_forall_open : x ~ y ↔ ∀ s : set X, is_open s → (x ∈ s ↔ y ∈ s) :=
+by simp only [inseparable_iff_specializes_and, specializes_iff_forall_open, ← forall_and_distrib,
+  ← iff_def, iff.comm]
+
+lemma not_inseparable_iff_exists_open : ¬(x ~ y) ↔ ∃ s : set X, is_open s ∧ xor (x ∈ s) (y ∈ s) :=
+by simp [inseparable_iff_forall_open, ← xor_iff_not_iff]
+
+lemma inseparable_iff_forall_closed : x ~ y ↔ ∀ s : set X, is_closed s → (x ∈ s ↔ y ∈ s) :=
+by simp only [inseparable_iff_specializes_and, specializes_iff_forall_closed, ← forall_and_distrib,
   ← iff_def]
 
 lemma inseparable_iff_mem_closure :
   x ~ y ↔ x ∈ closure ({y} : set X) ∧ y ∈ closure ({x} : set X) :=
-le_antisymm_iff.trans $ by simp only [nhds_le_nhds_iff_mem_closure, and_comm]
+inseparable_iff_specializes_and.trans $ by simp only [specializes_iff_mem_closure, and_comm]
 
 lemma inseparable_of_nhds_within_eq (hx : x ∈ s) (hy : y ∈ s) (h : 𝓝[s] x = 𝓝[s] y) : x ~ y :=
-le_antisymm (nhds_le_nhds_of_nhds_within h.le hx) (nhds_le_nhds_of_nhds_within h.ge hy)
+(specializes_of_nhds_within h.le hx).antisymm (specializes_of_nhds_within h.ge hy)
 
 lemma inducing.inseparable_iff (hf : inducing f) : f x ~ f y ↔ x ~ y :=
-by simp only [inseparable_iff_mem_closure, hf.closure_eq_preimage_closure_image, image_singleton,
-  mem_preimage]
+by simp only [inseparable_iff_specializes_and, hf.specializes_iff]
+
+lemma subtype_inseparable_iff {p : X → Prop} (x y : subtype p) : x ~ y ↔ (x : X) ~ y :=
+inducing_coe.inseparable_iff.symm
 
 namespace inseparable
 
@@ -132,14 +210,14 @@ lemma rfl : x ~ x := refl x
 lemma nhds_eq (h : x ~ y) : 𝓝 x = 𝓝 y := h
 
 lemma mem_open_iff (h : x ~ y) (hs : is_open s) : x ∈ s ↔ y ∈ s :=
-inseparable_iff_open.1 h s hs
+inseparable_iff_forall_open.1 h s hs
 
 lemma mem_closed_iff (h : x ~ y) (hs : is_closed s) : x ∈ s ↔ y ∈ s :=
-inseparable_iff_closed.1 h s hs
+inseparable_iff_forall_closed.1 h s hs
 
 lemma map_of_continuous_at (h : x ~ y) (hx : continuous_at f x) (hy : continuous_at f y) :
   f x ~ f y :=
-le_antisymm (nhds_le_nhds_of_continuous_at h.le hy) (nhds_le_nhds_of_continuous_at h.ge hx)
+(h.specializes.map_of_continuous_at hy).antisymm (h.specializes'.map_of_continuous_at hx)
 
 lemma map (h : x ~ y) (hf : continuous f) : f x ~ f y :=
 h.map_of_continuous_at hf.continuous_at hf.continuous_at
