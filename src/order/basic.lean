@@ -299,10 +299,6 @@ lemma eq_of_forall_le_iff [partial_order α] {a b : α}
   (H : ∀ c, c ≤ a ↔ c ≤ b) : a = b :=
 ((H _).1 le_rfl).antisymm ((H _).2 le_rfl)
 
-lemma forall_le_iff_iff_eq [partial_order α] {a b : α} :
-  (∀ c, c ≤ a ↔ c ≤ b) ↔ a = b :=
-⟨eq_of_forall_le_iff, λ h c, h ▸ iff.rfl⟩
-
 lemma le_of_forall_le [preorder α] {a b : α}
   (H : ∀ c, c ≤ a → c ≤ b) : a ≤ b :=
 H _ le_rfl
@@ -330,10 +326,6 @@ lemma forall_lt_iff_le' [linear_order α] {a b : α} :
 lemma eq_of_forall_ge_iff [partial_order α] {a b : α}
   (H : ∀ c, a ≤ c ↔ b ≤ c) : a = b :=
 ((H _).2 le_rfl).antisymm ((H _).1 le_rfl)
-
-lemma forall_ge_iff_iff_eq [partial_order α] {a b : α} :
-  (∀ c, a ≤ c ↔ b ≤ c) ↔ a = b :=
-⟨eq_of_forall_ge_iff, λ h c, h ▸ iff.rfl⟩
 
 /-- monotonicity of `≤` with respect to `→` -/
 lemma le_implies_le_of_le_of_le {a b c d : α} [preorder α] (hca : c ≤ a) (hbd : b ≤ d) :
