@@ -540,6 +540,69 @@ by rw [←of_finsupp_single, support, finsupp.support_single_ne_zero H]
 lemma support_monomial' (n) (a : R) : (monomial n a).support ⊆ singleton n :=
 by { rw [←of_finsupp_single, support], exact finsupp.support_single_subset }
 
+section fewnomials
+
+open finset
+
+-- todo: PR to `data/polynomial/basic` with other support lemmas
+lemma support_binomial_le {k m : ℕ} {x y : R} :
+  (C x * X ^ k + C y * X ^ m).support ⊆ {k, m} :=
+support_add.trans (union_subset ((support_C_mul_X_pow x k).trans
+  (singleton_subset_iff.mpr (mem_insert_self k {m}))) ((support_C_mul_X_pow y m).trans
+  (singleton_subset_iff.mpr (mem_insert_of_mem (mem_singleton_self m)))))
+
+-- todo: PR to `data/polynomial/basic` with other support lemmas
+lemma support_trinomial_le {k m n : ℕ} {x y z : R} :
+  (C x * X ^ k + C y * X ^ m + C z * X ^ n).support ⊆ {k, m, n} :=
+support_add.trans (union_subset (support_add.trans (union_subset (support_C_mul_X_pow'.trans
+  (singleton_subset_iff.mpr (mem_insert_self k {m, n}))) (support_C_mul_X_pow'.trans
+  (singleton_subset_iff.mpr (mem_insert_of_mem (mem_insert_self m {n}))))))
+  (support_C_mul_X_pow'.trans (singleton_subset_iff.mpr
+  (mem_insert_of_mem (mem_insert_of_mem (mem_singleton_self n))))))
+
+-- todo: PR to `data/polynomial/basic` with other support lemmas
+lemma support_binomial_eq {k m : ℕ} (hkm : k ≠ m) {x y : R} (hx : x ≠ 0) (hy : y ≠ 0) :
+  (C x * X ^ k + C y * X ^ m).support = {k, m} :=
+begin
+  refine subset_antisymm support_binomial_le _,
+  simp_rw [insert_subset, singleton_subset_iff, mem_support_iff, coeff_add, coeff_C_mul,
+    coeff_X_pow_self, mul_one, coeff_X_pow, if_neg hkm, if_neg hkm.symm,
+    mul_zero, zero_add, add_zero, ne.def, hx, hy, and_self, not_false_iff],
+end
+
+-- todo: PR to `data/polynomial/basic` with other support lemmas
+lemma support_trinomial_eq {k m n : ℕ} (hkm : k < m) (hmn : m < n) {x y z : R} (hx : x ≠ 0)
+  (hy : y ≠ 0) (hz : z ≠ 0) : (C x * X ^ k + C y * X ^ m + C z * X ^ n).support = {k, m, n} :=
+begin
+  refine subset_antisymm support_trinomial_le _,
+  simp_rw [insert_subset, singleton_subset_iff, mem_support_iff, coeff_add, coeff_C_mul,
+    coeff_X_pow_self, mul_one, coeff_X_pow, if_neg hkm.ne, if_neg hkm.ne', if_neg hmn.ne,
+    if_neg hmn.ne', if_neg (hkm.trans hmn).ne, if_neg (hkm.trans hmn).ne', mul_zero, add_zero,
+    zero_add, ne.def, hx, hy, hz, and_self, not_false_iff],
+end
+
+-- todo: PR to `data/polynomial/basic` with other support lemmas
+lemma card_support_binomial_eq {k m : ℕ} (hkm : k ≠ m) {x y : R} (hx : x ≠ 0) (hy : y ≠ 0) :
+  (C x * X ^ k + C y * X ^ m).support.card = 2 :=
+begin
+  rw [support_binomial_eq hkm hx hy, card_insert_of_not_mem, card_singleton],
+  rwa [mem_singleton],
+end
+
+-- todo: PR to `data/polynomial/basic` with other support lemmas
+lemma card_support_trinomial_eq {k m n : ℕ} (hkm : k < m) (hmn : m < n) {x y z : R} (hx : x ≠ 0)
+  (hy : y ≠ 0) (hz : z ≠ 0) : (C x * X ^ k + C y * X ^ m + C z * X ^ n).support.card = 3 :=
+begin
+  rw [support_trinomial_eq hkm hmn hx hy hz, card_insert_of_not_mem, card_insert_of_not_mem,
+      card_singleton],
+  { rw [mem_singleton],
+    exact hmn.ne },
+  { rw [mem_insert, mem_singleton, not_or_distrib],
+    exact ⟨hkm.ne, (hkm.trans hmn).ne⟩ },
+end
+
+end fewnomials
+
 lemma X_pow_eq_monomial (n) : X ^ n = monomial n (1:R) :=
 begin
   induction n with n hn,
