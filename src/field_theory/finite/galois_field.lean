@@ -207,8 +207,3 @@ begin
 end
 
 end finite_field
-
-example {p : ℕ} [fact p.prime] {R : Type*} [field R] [char_p R p] : algebra (zmod p) R :=
-begin
-  by refine zmod.algebra R p,
-end
