@@ -136,7 +136,7 @@ end
 
 variables (K) [field K] [fintype K]
 
-theorem card'' (p : ℕ) [hp : fact p.prime] [algebra (zmod p) K] :
+theorem card (p : ℕ) [hp : fact p.prime] [algebra (zmod p) K] :
   ∃ (n : ℕ+), nat.prime p ∧ q = p^(n : ℕ) :=
 begin
   obtain ⟨n, h⟩ := vector_space.card_fintype (zmod p) K,
@@ -144,12 +144,6 @@ begin
   refine ⟨⟨n, nat.pos_of_ne_zero (λ hn, _)⟩, hp.1, h⟩,
   rw [hn, pow_zero] at h,
   exact fintype.one_lt_card.ne' h,
-end
-
-theorem card (p : ℕ) [char_p K p] : ∃ (n : ℕ+), nat.prime p ∧ q = p^(n : ℕ) :=
-begin
-  haveI hp : fact p.prime := ⟨char_p.char_is_prime K p⟩,
-  exact card'' K p,
 end
 
 -- this statement doesn't use `q` because we want `K` to be an explicit parameter

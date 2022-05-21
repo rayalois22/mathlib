@@ -401,9 +401,11 @@ section ring
 
 variables (R) [ring R] [no_zero_divisors R] [nontrivial R] [fintype R]
 
-theorem char_is_prime (p : ℕ) [char_p R p] :
-  p.prime :=
+theorem char_is_prime (p : ℕ) [char_p R p] : p.prime :=
 or.resolve_right (char_is_prime_or_zero R p) (char_ne_zero_of_fintype R p)
+
+instance char_is_prime' (p : ℕ) [char_p R p] : fact p.prime :=
+⟨char_is_prime R p⟩
 
 end ring
 
