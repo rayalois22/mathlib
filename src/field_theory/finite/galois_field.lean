@@ -154,7 +154,7 @@ h ▸ finite_field.has_sub.sub.polynomial.is_splitting_field K p
 
 instance : is_galois (zmod p) K :=
 is_galois.of_separable_splitting_field (galois_poly_separable p (fintype.card K)
-  (let ⟨n, hp, hn⟩ := finite_field.card'' K p in hn.symm ▸ dvd_pow_self p n.ne_zero))
+  (let ⟨n, hp, hn⟩ := finite_field.card K p in hn.symm ▸ dvd_pow_self p n.ne_zero))
 
 /-- Any finite field is (possibly non canonically) isomorphic to some Galois field. -/
 def alg_equiv_galois_field (h : fintype.card K = p ^ n) :
