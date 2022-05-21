@@ -147,10 +147,7 @@ begin
 end
 
 theorem card (p : ℕ) [char_p K p] : ∃ (n : ℕ+), nat.prime p ∧ q = p^(n : ℕ) :=
-begin
-  haveI : fact p.prime := ⟨char_p.char_is_prime K p⟩,
-  exact card'' K p,
-end
+@card'' K _ _ p ⟨char_p.char_is_prime K p⟩ _
 
 -- this statement doesn't use `q` because we want `K` to be an explicit parameter
 theorem card' : ∃ (p : ℕ) (n : ℕ+), nat.prime p ∧ fintype.card K = p^(n : ℕ) :=
