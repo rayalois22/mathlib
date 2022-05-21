@@ -136,18 +136,20 @@ end
 
 variables (K) [field K] [fintype K]
 
+theorem card'' (p : ℕ) [hp : fact p.prime] [algebra (zmod p) K] :
+  ∃ (n : ℕ+), nat.prime p ∧ q = p^(n : ℕ) :=
+begin
+  obtain ⟨n, h⟩ := vector_space.card_fintype (zmod p) K,
+  rw zmod.card at h,
+  refine ⟨⟨n, nat.pos_of_ne_zero (λ hn, _)⟩, hp.1, h⟩,
+  rw [hn, pow_zero] at h,
+  exact fintype.one_lt_card.ne' h,
+end
+
 theorem card (p : ℕ) [char_p K p] : ∃ (n : ℕ+), nat.prime p ∧ q = p^(n : ℕ) :=
 begin
   haveI hp : fact p.prime := ⟨char_p.char_is_prime K p⟩,
-  letI : module (zmod p) K := { .. (zmod.cast_hom dvd_rfl K : zmod p →+* _).to_module },
-  obtain ⟨n, h⟩ := vector_space.card_fintype (zmod p) K,
-  rw zmod.card at h,
-  refine ⟨⟨n, _⟩, hp.1, h⟩,
-  apply or.resolve_left (nat.eq_zero_or_pos n),
-  rintro rfl,
-  rw pow_zero at h,
-  have : (0 : K) = 1, { apply fintype.card_le_one_iff.mp (le_of_eq h) },
-  exact absurd this zero_ne_one,
+  exact card'' K p,
 end
 
 -- this statement doesn't use `q` because we want `K` to be an explicit parameter
@@ -252,7 +254,7 @@ X_pow_card_sub_X_ne_zero K' $ nat.one_lt_pow _ _ (nat.pos_of_ne_zero hn) hp
 
 end
 
-variables (p : ℕ) [fact p.prime] [char_p K p]
+variables (p : ℕ) [fact p.prime] [algebra (zmod p) K]
 lemma roots_X_pow_card_sub_X : roots (X^q - X : K[X]) = finset.univ.val :=
 begin
   classical,
