@@ -6,7 +6,8 @@ Authors: Aaron Anderson, Alex J. Best, Johan Commelin, Eric Rodriguez, Ruben Van
 
 import algebra.char_p.algebra
 import field_theory.finite.basic
-import field_theory.galois
+import field_theory.separable
+import linear_algebra.finite_dimensional
 
 /-!
 # Galois fields
@@ -150,11 +151,17 @@ by rw [←splits_id_iff_splits, polynomial.map_sub, polynomial.map_pow, map_X, s
 
 lemma is_splitting_field_of_card_eq (h : fintype.card K = p ^ n) :
   is_splitting_field (zmod p) K (X ^ (p ^ n) - X) :=
-h ▸ finite_field.has_sub.sub.polynomial.is_splitting_field K p
-
-instance : is_galois (zmod p) K :=
-is_galois.of_separable_splitting_field (galois_poly_separable p (fintype.card K)
-  (let ⟨n, hp, hn⟩ := finite_field.card K p in hn.symm ▸ dvd_pow_self p n.ne_zero))
+{ splits := by { rw ← h, exact splits_X_pow_card_sub_X p },
+  adjoin_roots :=
+  begin
+    have hne : n ≠ 0,
+    { rintro rfl, rw [pow_zero, fintype.card_eq_one_iff_nonempty_unique] at h,
+      cases h, resetI, exact false_of_nontrivial_of_subsingleton K },
+    refine algebra.eq_top_iff.mpr (λ x, algebra.subset_adjoin _),
+    rw [polynomial.map_sub, polynomial.map_pow, map_X, finset.mem_coe, multiset.mem_to_finset,
+        mem_roots, is_root.def, eval_sub, eval_pow, eval_X, ← h, finite_field.pow_card, sub_self],
+    exact finite_field.X_pow_card_pow_sub_X_ne_zero K hne (fact.out _)
+  end }
 
 /-- Any finite field is (possibly non canonically) isomorphic to some Galois field. -/
 def alg_equiv_galois_field (h : fintype.card K = p ^ n) :

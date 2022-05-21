@@ -141,9 +141,7 @@ theorem card'' (p : ℕ) [hp : fact p.prime] [algebra (zmod p) K] :
 begin
   obtain ⟨n, h⟩ := vector_space.card_fintype (zmod p) K,
   rw zmod.card at h,
-  refine ⟨⟨n, nat.pos_of_ne_zero (λ hn, _)⟩, hp.1, h⟩,
-  rw [hn, pow_zero] at h,
-  exact fintype.one_lt_card.ne' h,
+  exact ⟨⟨n, nat.pos_of_ne_zero (λ hn, fintype.one_lt_card.ne' (by rwa hn at h))⟩, hp.1, h⟩,
 end
 
 theorem card (p : ℕ) [char_p K p] : ∃ (n : ℕ+), nat.prime p ∧ q = p^(n : ℕ) :=
@@ -251,7 +249,7 @@ X_pow_card_sub_X_ne_zero K' $ nat.one_lt_pow _ _ (nat.pos_of_ne_zero hn) hp
 
 end
 
-variables (p : ℕ) [fact p.prime] [algebra (zmod p) K]
+variables (p : ℕ) [fact p.prime] [char_p K p]
 lemma roots_X_pow_card_sub_X : roots (X^q - X : K[X]) = finset.univ.val :=
 begin
   classical,
