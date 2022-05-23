@@ -158,8 +158,8 @@ and there is an algebra structure `R / p → S / P`.
 noncomputable def inertia_deg [hp : p.is_maximal] : ℕ :=
 if hPp : comap f P = p
 then @finrank (R ⧸ p) (S ⧸ P) _ _ $ @algebra.to_module _ _ _ _ $ ring_hom.to_algebra $
-ideal.quotient.lift p (P^.quotient.mk^.comp f) $
-λ a ha, quotient.eq_zero_iff_mem.mpr $ mem_comap.mp $ hPp.symm ▸ ha
+  ideal.quotient.lift p (P^.quotient.mk^.comp f) $
+  λ a ha, quotient.eq_zero_iff_mem.mpr $ mem_comap.mp $ hPp.symm ▸ ha
 else 0
 
 -- Useful for the `nontriviality` tactic using `comap_eq_of_scalar_tower_quotient`.
@@ -439,7 +439,8 @@ and `quotient_range_pow_quot_succ_inclusion_equiv` for this as a linear equivale
 def quotient_to_quotient_range_pow_quot_succ_aux (i : ℕ) (a : S) (a_mem : a ∈ P^i) :
   S ⧸ P → (_ ⧸ (pow_quot_succ_inclusion f p P e i).range) :=
 quotient.map' (λ (x : S), ⟨_, ideal.mem_map_of_mem _ (ideal.mul_mem_left _ x a_mem)⟩)
-  (λ x y (h : x - y ∈ P), show _ - _ ∈ _, begin
+  (λ x y h, begin
+    rw submodule.quotient_rel_r_def at ⊢ h,
     simp only [_root_.map_mul, linear_map.mem_range],
     refine ⟨⟨_, ideal.mem_map_of_mem _ (ideal.mul_mem_mul h a_mem)⟩, _⟩,
     ext,
@@ -538,8 +539,8 @@ noncomputable def quotient_range_pow_quot_succ_inclusion_equiv [is_domain S] [is
 begin
   choose a a_mem a_not_mem using set_like.exists_of_lt
     (ideal.strict_anti_pow P hP (ideal.is_prime.ne_top infer_instance) (le_refl i.succ)),
-  refine (linear_equiv.of_bijective
-    (quotient_to_quotient_range_pow_quot_succ f p P e i a a_mem) _ _).symm,
+  refine (linear_equiv.of_bijective _ _ _).symm,
+  { exact quotient_to_quotient_range_pow_quot_succ f p P e i a a_mem },
   { exact quotient_to_quotient_range_pow_quot_succ_injective f p P e hi a_mem a_not_mem },
   { exact quotient_to_quotient_range_pow_quot_succ_surjective f p P e hP hi a_mem a_not_mem }
 end
