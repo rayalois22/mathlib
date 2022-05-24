@@ -57,17 +57,11 @@ instance pi_Lp.inner_product_space {ι : Type*} [fintype ι] (f : ι → Type*)
   norm_sq_eq_inner :=
   begin
     intro x,
-    have h₁ : ∑ (i : ι), ∥x i∥ ^ (2 : ℕ) = ∑ (i : ι), ∥x i∥ ^ (2 : ℝ),
-    { apply finset.sum_congr rfl,
-      intros j hj,
-      simp [←rpow_nat_cast] },
-    have h₂ : 0 ≤ ∑ (i : ι), ∥x i∥ ^ (2 : ℝ),
-    { rw [←h₁],
-      exact finset.sum_nonneg (λ j (hj : j ∈ finset.univ), pow_nonneg (norm_nonneg (x j)) 2) },
-    simp [norm, add_monoid_hom.map_sum, ←norm_sq_eq_inner],
-    rw [←rpow_nat_cast ((∑ (i : ι), ∥x i∥ ^ (2 : ℝ)) ^ (2 : ℝ)⁻¹) 2],
-    rw [←rpow_mul h₂],
-    norm_num [h₁],
+    have h₂ : 0 ≤ ∑ (i : ι), ∥x i∥ ^ (2 : ℝ) :=
+      finset.sum_nonneg (λ j hj, rpow_nonneg_of_nonneg (norm_nonneg (x j)) 2),
+    simp only [norm, add_monoid_hom.map_sum, ← norm_sq_eq_inner, one_div],
+    rw [← rpow_nat_cast ((∑ (i : ι), ∥x i∥ ^ (2 : ℝ)) ^ (2 : ℝ)⁻¹) 2, ← rpow_mul h₂],
+    norm_num,
   end,
   conj_sym :=
   begin
@@ -90,11 +84,6 @@ instance pi_Lp.inner_product_space {ι : Type*} [fintype ι] (f : ι → Type*)
   ⟪x, y⟫ = ∑ i, ⟪x i, y i⟫ :=
 rfl
 
-lemma pi_Lp.norm_eq_of_L2 {ι : Type*} [fintype ι] {f : ι → Type*}
-  [Π i, inner_product_space 𝕜 (f i)] (x : pi_Lp 2 f) :
-  ∥x∥ = sqrt (∑ (i : ι), ∥x i∥ ^ 2) :=
-by { rw [pi_Lp.norm_eq_of_nat 2]; simp [sqrt_eq_rpow] }
-
 /-- The standard real/complex Euclidean space, functions on a finite type. For an `n`-dimensional
 space use `euclidean_space 𝕜 (fin n)`. -/
 @[reducible, nolint unused_arguments]
@@ -102,8 +91,12 @@ def euclidean_space (𝕜 : Type*) [is_R_or_C 𝕜]
   (n : Type*) [fintype n] : Type* := pi_Lp 2 (λ (i : n), 𝕜)
 
 lemma euclidean_space.norm_eq {𝕜 : Type*} [is_R_or_C 𝕜] {n : Type*} [fintype n]
-  (x : euclidean_space 𝕜 n) : ∥x∥ = real.sqrt (∑ (i : n), ∥x i∥ ^ 2) :=
+  (x : euclidean_space 𝕜 n) : ∥x∥ = real.sqrt (∑ i, ∥x i∥ ^ 2) :=
 pi_Lp.norm_eq_of_L2 x
+
+lemma euclidean_space.nnnorm_eq {𝕜 : Type*} [is_R_or_C 𝕜] {n : Type*} [fintype n]
+  (x : euclidean_space 𝕜 n) : ∥x∥₊ = nnreal.sqrt (∑ i, ∥x i∥₊ ^ 2) :=
+pi_Lp.nnnorm_eq_of_L2 x
 
 variables [fintype ι]
 
@@ -198,12 +191,7 @@ by { classical, congr, simp, }
 
 @[simp] protected lemma repr_self [decidable_eq ι] (b : orthonormal_basis ι 𝕜 E) (i : ι) :
   b.repr (b i) = euclidean_space.single i (1:𝕜) :=
-begin
-  classical,
-  rw [← b.repr_symm_single i, linear_isometry_equiv.apply_symm_apply],
-  congr,
-  simp,
-end
+by rw [← b.repr_symm_single i, linear_isometry_equiv.apply_symm_apply]
 
 protected lemma repr_apply_apply (b : orthonormal_basis ι 𝕜 E) (v : E) (i : ι) :
   b.repr v i = ⟪b i, v⟫ :=
@@ -381,6 +369,88 @@ def linear_isometry_equiv.from_orthogonal_span_singleton
   (n : ℕ) [fact (finrank 𝕜 E = n + 1)] {v : E} (hv : v ≠ 0) :
   (𝕜 ∙ v)ᗮ ≃ₗᵢ[𝕜] (euclidean_space 𝕜 (fin n)) :=
 linear_isometry_equiv.of_inner_product_space (finrank_orthogonal_span_singleton hv)
+
+section linear_isometry
+
+variables {V : Type*} [inner_product_space 𝕜 V] [finite_dimensional 𝕜 V]
+
+variables {S : submodule 𝕜 V} {L : S →ₗᵢ[𝕜] V}
+
+open finite_dimensional
+
+/-- Let `S` be a subspace of a finite-dimensional complex inner product space `V`.  A linear
+isometry mapping `S` into `V` can be extended to a full isometry of `V`.
+
+TODO:  The case when `S` is a finite-dimensional subspace of an infinite-dimensional `V`.-/
+noncomputable def linear_isometry.extend (L : S →ₗᵢ[𝕜] V): V →ₗᵢ[𝕜] V :=
+begin
+  -- Build an isometry from Sᗮ to L(S)ᗮ through euclidean_space
+  let d := finrank 𝕜 Sᗮ,
+  have dim_S_perp : finrank 𝕜 Sᗮ = d := rfl,
+  let LS := L.to_linear_map.range,
+  have E : Sᗮ ≃ₗᵢ[𝕜] LSᗮ,
+  { have dim_LS_perp : finrank 𝕜 LSᗮ = d,
+    calc  finrank 𝕜 LSᗮ = finrank 𝕜 V - finrank 𝕜 LS : by simp only
+        [← LS.finrank_add_finrank_orthogonal, add_tsub_cancel_left]
+      ...               = finrank 𝕜 V - finrank 𝕜 S : by simp only
+        [linear_map.finrank_range_of_inj L.injective]
+      ...               = finrank 𝕜 Sᗮ : by simp only
+        [← S.finrank_add_finrank_orthogonal, add_tsub_cancel_left]
+      ...               = d : dim_S_perp,
+    let BS := ((fin_std_orthonormal_basis dim_S_perp).to_orthonormal_basis
+      (fin_std_orthonormal_basis_orthonormal dim_S_perp)),
+    let BLS := ((fin_std_orthonormal_basis dim_LS_perp).to_orthonormal_basis
+      (fin_std_orthonormal_basis_orthonormal dim_LS_perp)),
+    exact BS.repr.trans BLS.repr.symm },
+  let L3 := (LS)ᗮ.subtypeₗᵢ.comp E.to_linear_isometry,
+  -- Project onto S and Sᗮ
+  haveI : complete_space S := finite_dimensional.complete 𝕜 S,
+  haveI : complete_space V := finite_dimensional.complete 𝕜 V,
+  let p1 := (orthogonal_projection S).to_linear_map,
+  let p2 := (orthogonal_projection Sᗮ).to_linear_map,
+  -- Build a linear map from the isometries on S and Sᗮ
+  let M := L.to_linear_map.comp p1 + L3.to_linear_map.comp p2,
+  -- Prove that M is an isometry
+  have M_norm_map : ∀ (x : V), ∥M x∥ = ∥x∥,
+  { intro x,
+    -- Apply M to the orthogonal decomposition of x
+    have Mx_decomp : M x = L (p1 x) + L3 (p2 x),
+    { simp only [linear_map.add_apply, linear_map.comp_apply, linear_map.comp_apply,
+      linear_isometry.coe_to_linear_map]},
+    -- Mx_decomp is the orthogonal decomposition of M x
+    have Mx_orth : ⟪ L (p1 x), L3 (p2 x) ⟫ = 0,
+    { have Lp1x : L (p1 x) ∈ L.to_linear_map.range := L.to_linear_map.mem_range_self (p1 x),
+      have Lp2x : L3 (p2 x) ∈ (L.to_linear_map.range)ᗮ,
+      { simp only [L3, linear_isometry.coe_comp, function.comp_app, submodule.coe_subtypeₗᵢ,
+          ← submodule.range_subtype (LSᗮ)],
+        apply linear_map.mem_range_self},
+      apply submodule.inner_right_of_mem_orthogonal Lp1x Lp2x},
+    -- Apply the Pythagorean theorem and simplify
+    rw [← sq_eq_sq (norm_nonneg _) (norm_nonneg _), norm_sq_eq_add_norm_sq_projection x S],
+    simp only [sq, Mx_decomp],
+    rw norm_add_sq_eq_norm_sq_add_norm_sq_of_inner_eq_zero (L (p1 x)) (L3 (p2 x)) Mx_orth,
+    simp only [linear_isometry.norm_map, p1, p2, continuous_linear_map.to_linear_map_eq_coe,
+      add_left_inj, mul_eq_mul_left_iff, norm_eq_zero, true_or, eq_self_iff_true,
+      continuous_linear_map.coe_coe, submodule.coe_norm, submodule.coe_eq_zero] },
+  exact { to_linear_map := M, norm_map' := M_norm_map },
+end
+
+lemma linear_isometry.extend_apply (L : S →ₗᵢ[𝕜] V) (s : S):
+  L.extend s = L s :=
+begin
+  haveI : complete_space S := finite_dimensional.complete 𝕜 S,
+  simp only [linear_isometry.extend, continuous_linear_map.to_linear_map_eq_coe,
+    ←linear_isometry.coe_to_linear_map],
+  simp only [add_right_eq_self, linear_isometry.coe_to_linear_map,
+    linear_isometry_equiv.coe_to_linear_isometry, linear_isometry.coe_comp, function.comp_app,
+    orthogonal_projection_mem_subspace_eq_self, linear_map.coe_comp, continuous_linear_map.coe_coe,
+    submodule.coe_subtype, linear_map.add_apply, submodule.coe_eq_zero,
+    linear_isometry_equiv.map_eq_zero_iff, submodule.coe_subtypeₗᵢ,
+    orthogonal_projection_mem_subspace_orthogonal_complement_eq_zero,
+    submodule.orthogonal_orthogonal, submodule.coe_mem],
+end
+
+end linear_isometry
 
 section matrix
 

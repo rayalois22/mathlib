@@ -206,7 +206,7 @@ def continuous_linear_map :
   source_eq := rfl,
   target_eq := rfl,
   proj_to_fun := λ ⟨x, f⟩ h, rfl,
-  linear := λ x ⟨h₁, h₂⟩,
+  linear' := λ x ⟨h₁, h₂⟩,
   { map_add := λ L L', by simp [continuous_linear_map.to_fun'_apply' h₁ h₂],
     map_smul := λ c L, by simp [continuous_linear_map.to_fun'_apply' h₁ h₂], } }
 
@@ -332,6 +332,14 @@ end pretrivialization
 open pretrivialization
 variables [ring_hom_isometric σ]
 
+-- this instance is needed if we don't change the definition of `topological_vector_prebundle`.
+instance (b : B) : topological_space (vector_bundle_continuous_linear_map σ F₁ E₁ F₂ E₂ b) :=
+topological_space.induced (λ x : vector_bundle_continuous_linear_map σ F₁ E₁ F₂ E₂ b,
+  pretrivialization.continuous_linear_map σ
+    (trivialization_at 𝕜₁ F₁ E₁ b) (trivialization_at 𝕜₂ F₂ E₂ b)
+    (total_space_mk (vector_bundle_continuous_linear_map σ F₁ E₁ F₂ E₂) b x))
+    _root_.prod.topological_space
+
 /-- The continuous `σ`-semilinear maps between two topological vector bundles form a
 `topological_vector_prebundle` (this is an auxiliary construction for the
 `topological_vector_bundle` instance, in which the pretrivializations are collated but no topology
@@ -339,23 +347,24 @@ on the total space is yet provided). -/
 def _root_.vector_bundle_continuous_linear_map.topological_vector_prebundle :
   topological_vector_prebundle 𝕜₂ (F₁ →SL[σ] F₂)
   (vector_bundle_continuous_linear_map σ F₁ E₁ F₂ E₂) :=
-{ pretrivialization_at := λ x, pretrivialization.continuous_linear_map σ
-    (trivialization_at 𝕜₁ F₁ E₁ x) (trivialization_at 𝕜₂ F₂ E₂ x),
-  mem_base_pretrivialization_at := λ x,
-    ⟨mem_base_set_trivialization_at 𝕜₁ F₁ E₁ x, mem_base_set_trivialization_at 𝕜₂ F₂ E₂ x⟩,
-  continuous_triv_change := λ p q,
-  pretrivialization.continuous_triv_change_continuous_linear_map
-    (trivialization_at 𝕜₁ F₁ E₁ p)
-    (trivialization_at 𝕜₁ F₁ E₁ q)
-    (trivialization_at 𝕜₂ F₂ E₂ p)
-    (trivialization_at 𝕜₂ F₂ E₂ q) }
+sorry
+-- { pretrivialization_at := λ x, pretrivialization.continuous_linear_map σ
+--     (trivialization_at 𝕜₁ F₁ E₁ x) (trivialization_at 𝕜₂ F₂ E₂ x),
+--   mem_base_pretrivialization_at := λ x,
+--     ⟨mem_base_set_trivialization_at 𝕜₁ F₁ E₁ x, mem_base_set_trivialization_at 𝕜₂ F₂ E₂ x⟩,
+--   continuous_triv_change := λ p q,
+--   pretrivialization.continuous_triv_change_continuous_linear_map
+--     (trivialization_at 𝕜₁ F₁ E₁ p)
+--     (trivialization_at 𝕜₁ F₁ E₁ q)
+--     (trivialization_at 𝕜₂ F₂ E₂ p)
+--     (trivialization_at 𝕜₂ F₂ E₂ q) }
 
-/-- Topology on the continuous `σ`-semilinear_maps between the respective fibres at a point of two
-"normable" vector bundles over the same base. Here "normable" means that the bundles have fibres
-modelled on normed spaces `F₁`, `F₂` respectively.  The topology we put on the continuous
-`σ`-semilinear_maps is the topology coming from the operator norm on maps from `F₁` to `F₂`. -/
-instance (x : B) : topological_space (vector_bundle_continuous_linear_map σ F₁ E₁ F₂ E₂ x) :=
-(vector_bundle_continuous_linear_map.topological_vector_prebundle σ F₁ E₁ F₂ E₂).fiber_topology x
+-- /-- Topology on the continuous `σ`-semilinear_maps between the respective fibres at a point of two
+-- "normable" vector bundles over the same base. Here "normable" means that the bundles have fibres
+-- modelled on normed spaces `F₁`, `F₂` respectively.  The topology we put on the continuous
+-- `σ`-semilinear_maps is the topology coming from the operator norm on maps from `F₁` to `F₂`. -/
+-- instance (x : B) : topological_space (vector_bundle_continuous_linear_map σ F₁ E₁ F₂ E₂ x) :=
+-- (vector_bundle_continuous_linear_map.topological_vector_prebundle σ F₁ E₁ F₂ E₂).fiber_topology x
 
 /-- Topology on the total space of the continuous `σ`-semilinear_maps between two "normable" vector
 bundles over the same base. -/

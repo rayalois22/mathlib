@@ -362,9 +362,8 @@ begin
   have hab : 0 < a + b := add_pos ha hb,
   apply gauge_le_of_mem hab.le,
   have := convex_iff_div.1 hs hx hy ha.le hb.le hab,
-  rwa [smul_smul, smul_smul, mul_comm_div', mul_comm_div', ←mul_div_assoc, ←mul_div_assoc,
-    mul_inv_cancel ha.ne', mul_inv_cancel hb.ne', ←smul_add, one_div,
-    ←mem_smul_set_iff_inv_smul_mem₀ hab.ne'] at this,
+  rwa [smul_smul, smul_smul, ←mul_div_right_comm, ←mul_div_right_comm, mul_inv_cancel ha.ne',
+    mul_inv_cancel hb.ne', ←smul_add, one_div, ←mem_smul_set_iff_inv_smul_mem₀ hab.ne'] at this,
 end
 
 /-- `gauge s` as a seminorm when `s` is symmetric, convex and absorbent. -/
@@ -440,12 +439,9 @@ begin
     exact lt_irrefl _ h }
 end
 
-lemma smul_unit_ball {r : ℝ} (hr : 0 < r) : r • metric.ball (0 : E) 1 = metric.ball (0 : E) r :=
-by rw [smul_ball hr.ne', smul_zero, mul_one, real.norm_of_nonneg hr.le]
-
 lemma gauge_ball (hr : 0 < r) (x : E) : gauge (metric.ball (0 : E) r) x = ∥x∥ / r :=
 begin
-  rw [←smul_unit_ball hr, gauge_smul_left, pi.smul_apply, gauge_unit_ball, smul_eq_mul,
+  rw [←smul_unit_ball_of_pos hr, gauge_smul_left, pi.smul_apply, gauge_unit_ball, smul_eq_mul,
     abs_of_nonneg hr.le, div_eq_inv_mul],
   simp_rw [mem_ball_zero_iff, norm_neg],
   exact λ _, id,
