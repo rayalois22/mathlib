@@ -179,6 +179,15 @@ begin
       apply functor.congr_obj h, }, }
 end
 
+variable (W)
+
+@[simps]
+def obj_equiv : C ≃ W.localization :=
+{ to_fun := (Q W).obj,
+  inv_fun := λ X, X.as.obj,
+  left_inv := λ X, rfl,
+  right_inv := by { rintro ⟨⟨X⟩⟩, refl, }, }
+
 end localization
 
 end category_theory

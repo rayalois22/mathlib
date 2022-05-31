@@ -201,6 +201,10 @@ and it's usually best to insert explicit associators.)
 { hom := { app := λ _, 𝟙 _ },
   inv := { app := λ _, 𝟙 _ } }
 
+/-- Associativity of the composition of functors. -/
+@[protected]
+lemma assoc (F : A ⥤ B) (G : B ⥤ C) (H : C ⥤ D) : (F ⋙ G) ⋙ H = F ⋙ (G ⋙ H) := rfl
+
 lemma triangle (F : A ⥤ B) (G : B ⥤ C) :
   (associator F (𝟭 B) G).hom ≫ (whisker_left F (left_unitor G).hom) =
     (whisker_right (right_unitor F).hom G) :=

@@ -263,6 +263,13 @@ namespace is_inverted_by
 
 lemma of_is_iso {f : arrow C} {F : C ⥤ D} (h : is_iso (F.map f.hom)) : f.is_inverted_by F := h
 
+def of_comp {E : Type*} [category E] (f : arrow C) (F : C ⥤ D) (G : D ⥤ E)
+  (hf : f.is_inverted_by F) : f.is_inverted_by (F ⋙ G) :=
+begin
+  haveI : is_iso (F.map f.hom) := hf,
+  exact (infer_instance : is_iso (G.map (F.map f.hom))),
+end
+
 end is_inverted_by
 
 end arrow
@@ -284,6 +291,29 @@ def map_arrow (F : C ⥤ D) : arrow C ⥤ arrow D :=
   { left := F.map f.left,
     right := F.map f.right,
     w' := by { have w := f.w, simp only [id_map] at w, dsimp, simp only [←F.map_comp, w], } } }
+
+variable (C)
+
+@[simp]
+lemma map_arrow_id : map_arrow (𝟭 C) = 𝟭 (arrow C) :=
+begin
+  apply functor.ext,
+  { intros f g sq,
+    tidy, },
+  { intro f,
+    cases f,
+    refl, }
+end
+
+variable {C}
+
+@[simp]
+lemma map_arrow_comp {E : Type*} [category E] (F : C ⥤ D) (G : D ⥤ E) :
+  map_arrow (F ⋙ G) = map_arrow F ⋙ map_arrow G := rfl
+
+@[simp]
+lemma map_arrow_obj_arrow_mk (F : C ⥤ D) {X Y : C} (f : X ⟶ Y) :
+  F.map_arrow.obj (arrow.mk f) = arrow.mk (F.map f) := rfl
 
 end functor
 

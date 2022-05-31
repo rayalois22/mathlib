@@ -39,6 +39,18 @@ means that all morphisms in `W` are sent to isomorphisms in `D`. -/
 def is_inverted_by (W : arrow_class C) (F : C ⥤ D) : Prop :=
 ∀ (f : W), f.val.is_inverted_by F
 
+namespace is_inverted_by
+
+lemma of_comp {E : Type*} [category E] (W : arrow_class C) (F : C ⥤ D) (G : D ⥤ E)
+  (hF : W.is_inverted_by F) : W.is_inverted_by (F ⋙ G) :=
+begin
+  intro w,
+  apply arrow.is_inverted_by.of_comp,
+  apply hF,
+end
+
+end is_inverted_by
+
 end arrow_class
 
 end category_theory

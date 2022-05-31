@@ -196,8 +196,8 @@ lemma is_iso_of_is_iso_app (α : F ⟶ G) [∀ X : C, is_iso (α.app X)] : is_is
 def hcomp {F G : C ⥤ D} {H I : D ⥤ E} (α : F ≅ G) (β : H ≅ I) : F ⋙ H ≅ G ⋙ I :=
 begin
   refine ⟨α.hom ◫ β.hom, α.inv ◫ β.inv, _, _⟩,
-  { ext, rw [←nat_trans.exchange], simp, refl },
-  ext, rw [←nat_trans.exchange], simp, refl
+  { ext, rw [←nat_trans.exchange], simp, },
+  ext, rw [←nat_trans.exchange], simp,
 end
 
 end nat_iso

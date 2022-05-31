@@ -93,6 +93,17 @@ infix ` ◫ `:80 := hcomp
 
 lemma id_hcomp_app {H : E ⥤ C} (α : F ⟶ G) (X : E) : (𝟙 H ◫ α).app X = α.app _ := by simp
 
+@[simp]
+lemma id_hcomp_id {F : C ⥤ D} {G : D ⥤ E} : 𝟙 F ◫ 𝟙 G = 𝟙 _ := by { ext, dsimp, simp, }
+
+@[simp]
+lemma hcomp_comp {F G : C ⥤ D} {H I J : D ⥤ E} (α : F ⟶ G) (β₁ : H ⟶ I) (β₂ : I ⟶ J) :
+α ◫ (β₁ ≫ β₂) = (α ◫ β₁) ≫ (𝟙 _ ◫ β₂) := by { ext, dsimp, simp, }
+
+@[simp]
+lemma comp_hcomp_comp {F G H : C ⥤ D} {I J : D ⥤ E} (α₁ : F ⟶ G) (α₂ : G ⟶ H) (β : I ⟶ J) :
+(α₁ ≫ α₂) ◫ β = (α₁ ◫ β) ≫ (α₂ ◫ 𝟙 _) := by { ext, dsimp, simp, }
+
 -- Note that we don't yet prove a `hcomp_assoc` lemma here: even stating it is painful, because we
 -- need to use associativity of functor composition. (It's true without the explicit associator,
 -- because functor composition is definitionally associative,
