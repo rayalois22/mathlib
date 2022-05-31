@@ -289,10 +289,10 @@ instance vector_bundle_continuous_linear_map.topological_vector_bundle :=
 
 variables {F₁ E₁ F₂ E₂}
 
-/-- Given trivializations `e₁`, `e₂` for vector bundles `E₁`, `E₂` over a base `B`, the induced
-trivialization for the continuous `σ`-semilinear maps from `E₁` to `E₂`, whose base set is
-`e₁.base_set ∩ e₂.base_set`.
--/
+-- /-- Given trivializations `e₁`, `e₂` for vector bundles `E₁`, `E₂` over a base `B`, the induced
+-- trivialization for the continuous `σ`-semilinear maps from `E₁` to `E₂`, whose base set is
+-- `e₁.base_set ∩ e₂.base_set`.
+-- -/
 -- def trivialization.continuous_linear_map
 --   (e₁ : trivialization 𝕜₁ F₁ E₁) (e₂ : trivialization 𝕜₂ F₂ E₂) :
 --   trivialization 𝕜₂ (F₁ →SL[σ] F₂) (vector_bundle_continuous_linear_map σ F₁ E₁ F₂ E₂) :=
