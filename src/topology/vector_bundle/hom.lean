@@ -11,9 +11,42 @@ import analysis.normed_space.operator_norm
 
 noncomputable theory
 
-open bundle set
+open bundle set continuous_linear_map
+
+section move
+
+lemma continuous_clm_comp
+{𝕜₁} [nondiscrete_normed_field 𝕜₁]
+{F₁} [normed_group F₁] [normed_space 𝕜₁ F₁]
+{F₂} [normed_group F₂] [normed_space 𝕜₁ F₂]
+{F₃} [normed_group F₃] [normed_space 𝕜₁ F₃] :
+  continuous (λ x : (F₂ →L[𝕜₁] F₃) × (F₁ →L[𝕜₁] F₂), x.1.comp x.2) :=
+(compL 𝕜₁ F₁ F₂ F₃).continuous₂
+
+lemma continuous.clm_comp {X} [topological_space X]
+{𝕜₁} [nondiscrete_normed_field 𝕜₁]
+{F₁} [normed_group F₁] [normed_space 𝕜₁ F₁]
+{F₂} [normed_group F₂] [normed_space 𝕜₁ F₂]
+{F₃} [normed_group F₃] [normed_space 𝕜₁ F₃] {f : X → F₁ →L[𝕜₁] F₂}
+  {g : X → F₂ →L[𝕜₁] F₃} (hf : continuous f)
+  (hg : continuous g) :
+  continuous (λ x, (g x).comp (f x)) :=
+(compL 𝕜₁ F₁ F₂ F₃).continuous₂.comp₂ hg hf
+
+lemma continuous_on.clm_comp {X} [topological_space X]
+{𝕜₁} [nondiscrete_normed_field 𝕜₁]
+{F₁} [normed_group F₁] [normed_space 𝕜₁ F₁]
+{F₂} [normed_group F₂] [normed_space 𝕜₁ F₂]
+{F₃} [normed_group F₃] [normed_space 𝕜₁ F₃] {f : X → F₁ →L[𝕜₁] F₂}
+  {g : X → F₂ →L[𝕜₁] F₃} {s : set X} (hf : continuous_on f s)
+  (hg : continuous_on g s) :
+  continuous_on (λ x, (g x).comp (f x)) s :=
+(compL 𝕜₁ F₁ F₂ F₃).continuous₂.comp_continuous_on (hg.prod hf)
+
+end move
 
 namespace topological_vector_bundle
+
 
 section defs
 variables {𝕜₁ : Type*} [normed_field 𝕜₁]
@@ -64,7 +97,7 @@ variables (F₂ : Type*) [normed_group F₂][normed_space 𝕜₂ F₂]
 
 namespace pretrivialization
 
-variables (e₁ : trivialization 𝕜₁ F₁ E₁) (e₂ : trivialization 𝕜₂ F₂ E₂)
+variables (e₁ e₁' : trivialization 𝕜₁ F₁ E₁) (e₂ e₂' : trivialization 𝕜₂ F₂ E₂)
 
 include e₁ e₂
 variables {F₁ E₁ F₂ E₂}
@@ -115,7 +148,7 @@ def continuous_linear_map :
     simp_rw [continuous_linear_map.to_fun', continuous_linear_map.inv_fun',
       sigma.mk.inj_iff, eq_self_iff_true, heq_iff_eq, true_and],
     ext v,
-    simp only [continuous_linear_map.comp_apply, trivialization.symmL_continuous_linear_map_at,
+    simp only [comp_apply, trivialization.symmL_continuous_linear_map_at,
       h₁, h₂]
   end,
   right_inv' := λ ⟨x, f⟩ ⟨⟨h₁, h₂⟩, _⟩,
@@ -123,7 +156,7 @@ def continuous_linear_map :
     simp_rw [continuous_linear_map.inv_fun', continuous_linear_map.to_fun',
       prod.mk.inj_iff, eq_self_iff_true, true_and],
     ext v,
-    simp only [continuous_linear_map.comp_apply, trivialization.continuous_linear_map_at_symmL,
+    simp only [comp_apply, trivialization.continuous_linear_map_at_symmL,
       h₁, h₂]
   end,
   open_target := (e₁.open_base_set.inter e₂.open_base_set).prod is_open_univ,
@@ -133,127 +166,75 @@ def continuous_linear_map :
   target_eq := rfl,
   proj_to_fun := λ ⟨x, f⟩ h, rfl,
   linear' := λ x h,
-  { map_add := λ L L', by simp_rw [continuous_linear_map.to_fun'_apply',
-      continuous_linear_map.add_comp, continuous_linear_map.comp_add],
-    map_smul := λ c L, by simp_rw [continuous_linear_map.to_fun'_apply',
-      continuous_linear_map.smul_comp, continuous_linear_map.comp_smulₛₗ, ring_hom.id_apply]} }
+  { map_add := λ L L', by simp_rw [continuous_linear_map.to_fun'_apply', add_comp, comp_add],
+    map_smul := λ c L, by simp_rw [continuous_linear_map.to_fun'_apply', smul_comp, comp_smulₛₗ,
+      ring_hom.id_apply]} }
 
-variables {σ e₁ e₂}
+lemma continuous_linear_map_apply :
+  ⇑(continuous_linear_map σ e₁ e₂) = continuous_linear_map.to_fun' σ e₁ e₂ :=
+rfl
 
--- @[simp] lemma base_set_continuous_linear_map :
---   (continuous_linear_map σ e₁ e₂).base_set = e₁.base_set ∩ e₂.base_set :=
--- rfl
+lemma continuous_linear_map_symm_apply :
+  ⇑(continuous_linear_map σ e₁ e₂).to_local_equiv.symm = continuous_linear_map.inv_fun' σ e₁ e₂ :=
+rfl
 
--- lemma continuous_linear_map_apply {x : B} (hx₁ : x ∈ e₁.base_set) (hx₂ : x ∈ e₂.base_set)
---   (L : E₁ x →SL[σ] E₂ x) :
---   continuous_linear_map σ e₁ e₂ ⟨x, L⟩
---   = ⟨x, ((e₂.continuous_linear_equiv_at x hx₂ : E₂ x →L[𝕜₂] F₂).comp L).comp
---       ((e₁.continuous_linear_equiv_at x hx₁).symm : F₁ →L[𝕜₁] E₁ x)⟩ :=
--- continuous_linear_map.to_fun'_apply hx₁ hx₂ L
-
--- lemma continuous_linear_map_symm_apply {x : B} (hx₁ : x ∈ e₁.base_set) (hx₂ : x ∈ e₂.base_set)
---   (f : F₁ →SL[σ] F₂) :
---   (continuous_linear_map σ e₁ e₂).to_local_equiv.symm (x, f)
---   = ⟨x, (((e₂.continuous_linear_equiv_at x hx₂).symm : F₂ →L[𝕜₂] E₂ x).comp f).comp
---       ((e₁.continuous_linear_equiv_at x hx₁) : E₁ x →L[𝕜₁] F₁)⟩ :=
--- continuous_linear_map.inv_fun'_apply hx₁ hx₂ f
-
-lemma continuous_triv_change_continuous_linear_map
-  (e₁ f₁ : trivialization 𝕜₁ F₁ E₁) (e₂ f₂ : trivialization 𝕜₂ F₂ E₂) :
-  continuous_on
-    ((continuous_linear_map σ e₁ e₂ : total_space _ → B × (F₁ →SL[σ] F₂))
-    ∘ (continuous_linear_map σ f₁ f₂).to_local_equiv.symm)
-    ((continuous_linear_map σ f₁ f₂).target
-    ∩ ((continuous_linear_map σ f₁ f₂).to_local_equiv.symm) ⁻¹'
-      (continuous_linear_map σ e₁ e₂).source) :=
+lemma continuous_linear_map_symm_apply' {b : B} (hb : b ∈ e₁.base_set ∩ e₂.base_set)
+  (L : F₁ →SL[σ] F₂) :
+  (continuous_linear_map σ e₁ e₂).symm b L =
+  (e₂.symmL b).comp (L.comp $ e₁.continuous_linear_map_at b) :=
 begin
-  refine continuous_on.prod' _ _,
-  { apply continuous_fst.continuous_on.congr,
-    rintros p ⟨hp₁, hp₂⟩,
-    convert (continuous_linear_map σ e₁ e₂).to_fiber_bundle_pretrivialization.coe_fst hp₂,
-    rw (continuous_linear_map σ f₁ f₂).to_fiber_bundle_pretrivialization.proj_symm_apply hp₁ },
-  rw [topological_fiber_bundle.pretrivialization.target_inter_preimage_symm_source_eq,
-    pretrivialization.base_set_continuous_linear_map, pretrivialization.base_set_continuous_linear_map],
-  let ψ₁ := f₁.to_local_homeomorph.symm.trans e₁.to_local_homeomorph,
-  let ψ₂ := f₂.to_local_homeomorph.symm.trans e₂.to_local_homeomorph,
-  have hψ₁ : ψ₁.source = (e₁.base_set ∩ f₁.base_set) ×ˢ (univ : set F₁) :=
-    e₁.to_pretrivialization.to_fiber_bundle_pretrivialization.trans_source f₁,
-  have hψ₂ : ψ₂.source = (e₂.base_set ∩ f₂.base_set) ×ˢ (univ : set F₂) :=
-    e₂.to_pretrivialization.to_fiber_bundle_pretrivialization.trans_source f₂,
-  -- let Φ₁ : B × (F₁ →SL[σ] F₂) → (F₁ →SL[σ] F₂) :=
-  -- begin
-  --   rintros ⟨x, f⟩,
-  --   -- refine continuous_linear_map.compSL F₁ F₂ F₂ σ (ring_hom.id 𝕜₂) (transition e₂ f₂ x : F₂ →L[𝕜₂] F₂) _,
-  --   exact continuous_linear_map.compSL F₁ F₁ F₂ (ring_hom.id 𝕜₁) σ f (transition f₁ e₁ x : F₁ →L[𝕜₁] F₁),
-  --   --exexact ((transition e₂ f₂ x : F₂ →L[𝕜₂] F₂).compL 𝕜₂ 𝕜₂ f).comp (transition f₁ e₁ x : F₁ →L[𝕜₁] F₁),
-  -- end,
-  -- let Φ₂ : B × (F₁ →SL[σ] F₂) → (F₂ →L[𝕜₂] F₂) :=
-  -- begin
-  --   rintros ⟨x, f⟩,
-  --   exact (transition e₂ f₂ x : F₂ →L[𝕜₂] F₂),
-  --   --exexact ((transition e₂ f₂ x : F₂ →L[𝕜₂] F₂).compL 𝕜₂ 𝕜₂ f).comp (transition f₁ e₁ x : F₁ →L[𝕜₁] F₁),
-  -- end,
-  let Φ : B × (F₁ →SL[σ] F₂) → (F₁ →SL[σ] F₂) :=
-  begin
-    rintros ⟨x, f⟩,
-    refine continuous_linear_map.compSL F₁ F₂ F₂ σ (ring_hom.id 𝕜₂) (transition e₂ f₂ x : F₂ →L[𝕜₂] F₂) _,
-    exact continuous_linear_map.compSL F₁ F₁ F₂ (ring_hom.id 𝕜₁) σ f (transition f₁ e₁ x : F₁ →L[𝕜₁] F₁),
-    --exexact ((transition e₂ f₂ x : F₂ →L[𝕜₂] F₂).compL 𝕜₂ 𝕜₂ f).comp (transition f₁ e₁ x : F₁ →L[𝕜₁] F₁),
-  end,
-  have key : continuous_on Φ ((e₁.base_set ∩ e₂.base_set ∩ (f₁.base_set ∩ f₂.base_set)) ×ˢ univ),
-  { --dsimp only [Φ₁, Φ₂],
-    have := (continuous_linear_map.compSL F₁ F₂ F₂ σ (ring_hom.id 𝕜₂)).continuous.comp_continuous_on
-      (continuous_on_transition e₂ f₂),
-    sorry },
-  { refine key.congr _,
-    rintros ⟨x, f⟩ ⟨⟨hxe : x ∈ _, hxf : x ∈ _⟩, -⟩,
-    dsimp [Φ],
-    rw continuous_linear_map_symm_apply hxf.1 hxf.2 f,
-    rw continuous_linear_map_apply hxe.1 hxe.2,
-    rw transition_apply hxe.2 hxf.2,
-    rw transition_apply hxf.1 hxe.1,
-    simp [continuous_linear_map.comp_assoc, ← continuous_linear_equiv.comp_coe] },
-  -- have : eq_on Φ
-  -- begin
-  --   rintros ⟨x, f⟩,
-  --   refine @_root_.continuous_linear_map.comp _ _ _ _ _ _ (ring_hom.id 𝕜₁) σ _ _ _ (E₁ x) _ _ _ _ _
-  --     _ _ _ _ _ _ ↑(e₁.continuous_linear_equiv_at x sorry).symm,
-  --   refine @_root_.continuous_linear_map.comp _ _ _ _ _ _ (ring_hom.id 𝕜₁) σ _ _ _ F₁ _ _ _ _ _
-  --     _ _ _ _ _ _ ↑(f₁.continuous_linear_equiv_at x sorry),
-  --   refine @_root_.continuous_linear_map.comp _ _ _ _ _ _ σ (ring_hom.id 𝕜₂) _ _ _ (E₂ x) _ _ _ _ _
-  --     _ _ _ _ _ ↑(e₂.continuous_linear_equiv_at x sorry) _,
-  --   refine @_root_.continuous_linear_map.comp _ _ _ _ _ _ σ (ring_hom.id 𝕜₂) _ _ _ F₂ _ _ _ _ _
-  --     _ _ _ _ _ ↑(f₂.continuous_linear_equiv_at x sorry).symm _,
-  --   exact f,
-  -- end,
-  -- ext1 p,
-  -- obtain ⟨x, f⟩ := p,
-  -- dsimp [Φ, continuous_linear_map],
-  -- refl,
-  -- refine continuous_on.prod' _ _,
-  -- { refine ((continuous_snd.comp_continuous_on ψ₁.continuous_on).comp
-  --     (continuous_id.prod_map continuous_fst).continuous_on _).congr _,
-  --   { rw hψ₁,
-  --     mfld_set_tac },
-  --   { rintros ⟨x, ⟨w₁, w₂⟩⟩ ⟨hx, -⟩,
-  --     have hxe₁ : x ∈ e₁.base_set := hx.1.1,
-  --     have hxe₂ : x ∈ e₂.base_set := hx.1.2,
-  --     dsimp,
-  --     rw [continuous_linear_map_symm_apply hx.2.1 hx.2.2, continuous_linear_map_apply hxe₁ hxe₂],
-  --     dsimp,
-  --     rw [f₁.symm_apply_eq_continuous_linear_map_continuous_linear_equiv_at_symm] } },
-  -- { refine ((continuous_snd.comp_continuous_on ψ₂.continuous_on).comp
-  --     (continuous_id.continuous_linear_map_map continuous_snd).continuous_on _).congr _,
-  --   { rw hψ₂,
-  --     mfld_set_tac },
-  --   { rintros ⟨x, ⟨w₁, w₂⟩⟩ ⟨hx, -⟩,
-  --     have hxe₁ : x ∈ e₁.base_set := hx.1.1,
-  --     have hxe₂ : x ∈ e₂.base_set := hx.1.2,
-  --     dsimp,
-  --     rw [continuous_linear_map_symm_apply hx.2.1 hx.2.2, continuous_linear_map_apply hxe₁ hxe₂],
-  --     dsimp,
-  --     rw [f₂.symm_apply_eq_continuous_linear_map_continuous_linear_equiv_at_symm] } },
+  rw [symm_apply], refl, exact hb
 end
+
+def continuous_linear_map_coord_change (e₁ e₁' : trivialization 𝕜₁ F₁ E₁)
+  (e₂ e₂' : trivialization 𝕜₂ F₂ E₂) (b : B) : (F₁ →SL[σ] F₂) →L[𝕜₂] F₁ →SL[σ] F₂ :=
+((e₁'.coord_change e₁ b).symm.arrow_congrSL (e₂.coord_change e₂' b) :
+  (F₁ →SL[σ] F₂) ≃L[𝕜₂] F₁ →SL[σ] F₂)
+
+-- move
+attribute [simps apply {simp_rhs := tt}] continuous_linear_equiv.arrow_congrSL
+
+lemma continuous_linear_map_coord_change_apply (e₁ e₁' : trivialization 𝕜₁ F₁ E₁)
+  (e₂ e₂' : trivialization 𝕜₂ F₂ E₂) (b : B)
+  (hb : b ∈ (e₁.base_set ∩ e₂.base_set) ∩ (e₁'.base_set ∩ e₂'.base_set)) (L : F₁ →SL[σ] F₂) :
+  continuous_linear_map_coord_change σ e₁ e₁' e₂ e₂' b L =
+  (continuous_linear_map σ e₁' e₂'
+    (total_space_mk _ b ((continuous_linear_map σ e₁ e₂).symm b L))).2 :=
+begin
+  ext v,
+  simp_rw [continuous_linear_map_coord_change, continuous_linear_equiv.coe_coe,
+    continuous_linear_equiv.arrow_congrSL_apply,
+    continuous_linear_map_apply, continuous_linear_map.to_fun',
+    continuous_linear_map_symm_apply' σ e₁ e₂ hb.1,
+    comp_apply, continuous_linear_equiv.coe_coe, continuous_linear_equiv.symm_symm,
+    trivialization.continuous_linear_map_at_apply, trivialization.symmL_apply],
+  dsimp only [total_space_mk],
+  rw [e₂.coord_change_apply e₂', e₁'.coord_change_apply e₁, e₁.coe_linear_map_at_of_mem hb.1.1,
+    e₂'.coe_linear_map_at_of_mem hb.2.2],
+  exacts [⟨hb.2.1, hb.1.1⟩, ⟨hb.1.2, hb.2.2⟩]
+end
+
+lemma continuous_on_continuous_linear_map_coord_change {e₁ e₁' : trivialization 𝕜₁ F₁ E₁}
+  {e₂ e₂' : trivialization 𝕜₂ F₂ E₂}
+  (he₁ : e₁ ∈ trivialization_atlas 𝕜₁ F₁ E₁) (he₁' : e₁' ∈ trivialization_atlas 𝕜₁ F₁ E₁)
+  (he₂ : e₂ ∈ trivialization_atlas 𝕜₂ F₂ E₂) (he₂' : e₂' ∈ trivialization_atlas 𝕜₂ F₂ E₂) :
+  continuous_on (continuous_linear_map_coord_change σ e₁ e₁' e₂ e₂')
+    ((e₁.base_set ∩ e₂.base_set) ∩ (e₁'.base_set ∩ e₂'.base_set)) :=
+begin
+  have h₁ := (compSL F₁ F₂ F₂ σ (ring_hom.id 𝕜₂)).continuous,
+  have h₂ := (continuous_linear_map.flip (compSL F₁ F₁ F₂ (ring_hom.id 𝕜₁) σ)).continuous,
+  have h₃ := (continuous_on_coord_change e₁' he₁' e₁ he₁),
+  have h₄ := (continuous_on_coord_change e₂ he₂ e₂' he₂'),
+  refine ((h₂.comp_continuous_on (h₃.mono _)).clm_comp (h₁.comp_continuous_on (h₄.mono _))).congr _,
+  { mfld_set_tac },
+  { mfld_set_tac },
+  { intros b hb, ext L v,
+    simp only [continuous_linear_map_coord_change, continuous_linear_equiv.coe_coe,
+      continuous_linear_equiv.arrow_congrSL_apply, comp_apply, function.comp, compSL_apply,
+      flip_apply, continuous_linear_equiv.symm_symm] },
+end
+
+variables {σ e₁ e₁' e₂ e₂'}
 
 end pretrivialization
 
@@ -261,12 +242,12 @@ open pretrivialization
 variables [ring_hom_isometric σ]
 
 -- this instance is needed if we don't change the definition of `topological_vector_prebundle`.
-instance (b : B) : topological_space (vector_bundle_continuous_linear_map σ F₁ E₁ F₂ E₂ b) :=
-topological_space.induced (λ x : vector_bundle_continuous_linear_map σ F₁ E₁ F₂ E₂ b,
-  pretrivialization.continuous_linear_map σ
-    (trivialization_at 𝕜₁ F₁ E₁ b) (trivialization_at 𝕜₂ F₂ E₂ b)
-    (total_space_mk (vector_bundle_continuous_linear_map σ F₁ E₁ F₂ E₂) b x))
-    _root_.prod.topological_space
+-- instance (b : B) : topological_space (vector_bundle_continuous_linear_map σ F₁ E₁ F₂ E₂ b) :=
+-- topological_space.induced (λ x : vector_bundle_continuous_linear_map σ F₁ E₁ F₂ E₂ b,
+--   pretrivialization.continuous_linear_map σ
+--     (trivialization_at 𝕜₁ F₁ E₁ b) (trivialization_at 𝕜₂ F₂ E₂ b)
+--     (total_space_mk (vector_bundle_continuous_linear_map σ F₁ E₁ F₂ E₂) b x))
+--     _root_.prod.topological_space
 
 /-- The continuous `σ`-semilinear maps between two topological vector bundles form a
 `topological_vector_prebundle` (this is an auxiliary construction for the
@@ -275,11 +256,26 @@ on the total space is yet provided). -/
 def _root_.vector_bundle_continuous_linear_map.topological_vector_prebundle :
   topological_vector_prebundle 𝕜₂ (F₁ →SL[σ] F₂)
   (vector_bundle_continuous_linear_map σ F₁ E₁ F₂ E₂) :=
-sorry
--- { pretrivialization_at := λ x, pretrivialization.continuous_linear_map σ
---     (trivialization_at 𝕜₁ F₁ E₁ x) (trivialization_at 𝕜₂ F₂ E₂ x),
---   mem_base_pretrivialization_at := λ x,
---     ⟨mem_base_set_trivialization_at 𝕜₁ F₁ E₁ x, mem_base_set_trivialization_at 𝕜₂ F₂ E₂ x⟩,
+{ pretrivialization_atlas :=
+  image2 (λ e₁ e₂, pretrivialization.continuous_linear_map σ e₁ e₂) (trivialization_atlas 𝕜₁ F₁ E₁)
+    (trivialization_atlas 𝕜₂ F₂ E₂),
+-- ⋃ (e₁ ∈ trivialization_atlas 𝕜₁ F₁ E₁)
+--     (e₂ ∈ trivialization_atlas 𝕜₂ F₂ E₂), {pretrivialization.continuous_linear_map σ e₁ e₂},
+  pretrivialization_at := λ x, pretrivialization.continuous_linear_map σ
+    (trivialization_at 𝕜₁ F₁ E₁ x) (trivialization_at 𝕜₂ F₂ E₂ x),
+  mem_base_pretrivialization_at := λ x,
+    ⟨mem_base_set_trivialization_at 𝕜₁ F₁ E₁ x, mem_base_set_trivialization_at 𝕜₂ F₂ E₂ x⟩,
+  pretrivialization_mem_atlas := λ x,
+    ⟨_, _, trivialization_mem_atlas 𝕜₁ F₁ E₁ x, trivialization_mem_atlas 𝕜₂ F₂ E₂ x, rfl⟩,
+  coord_change := by { intros e₁ he₁ e₂ he₂,  },
+  continuous_on_coord_change := _,
+  coord_change_apply := _ }
+-- { pretrivialization_at := ,
+--   pretrivialization_atlas := sorry,
+--   pretrivialization_mem_atlas := sorry,
+  -- mem_base_pretrivialization_at :=
+--   coord_change := sorry,
+--   coord_change_apply := sorry,
 --   continuous_triv_change := λ p q,
 --   pretrivialization.continuous_triv_change_continuous_linear_map
 --     (trivialization_at 𝕜₁ F₁ E₁ p)

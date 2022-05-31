@@ -526,13 +526,13 @@ lemma _root_.continuous.if_const' {α β : Type*} [topological_space α] [topolo
   continuous (λ a, if p then f a else g a) :=
 by { split_ifs, exact hf h, exact hg h }
 
-
 /-- Forward map of `continuous_linear_equiv_at` (only propositionally equal),
   defined everywhere (`0` outside domain). -/
 @[simps apply {fully_applied := ff}]
 def continuous_linear_map_at (e : trivialization R F E) (b : B) :
   E b →L[R] F :=
-{ cont := by { dsimp, rw [e.coe_linear_map_at b],
+{ to_fun := e.linear_map_at b,
+  cont := by { dsimp, rw [e.coe_linear_map_at b],
   refine continuous.if_const' _ (λ hb, _) (λ _, continuous_zero),
   refine continuous_snd.comp (e.to_local_homeomorph.continuous_on.comp_continuous
     (total_space_mk_inducing R F E b).continuous (λ x, e.mem_source.mpr hb)) },
@@ -541,7 +541,8 @@ def continuous_linear_map_at (e : trivialization R F E) (b : B) :
 /-- Backwards map of `continuous_linear_equiv_at`, defined everywhere. -/
 @[simps apply {fully_applied := ff}]
 def symmL (e : trivialization R F E) (b : B) : F →L[R] E b :=
-{ cont := begin
+{ to_fun := e.symm b,
+  cont := begin
     by_cases hb : b ∈ e.base_set,
     { rw (topological_vector_bundle.total_space_mk_inducing R F E b).continuous_iff,
       exact e.continuous_on_symm.comp_continuous (continuous_const.prod_mk continuous_id)
