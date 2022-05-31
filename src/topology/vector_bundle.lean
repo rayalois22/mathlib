@@ -569,24 +569,8 @@ def continuous_linear_equiv_at (e : trivialization R F E) (b : B)
   inv_fun := e.symm b,
   continuous_to_fun := continuous_snd.comp (e.to_local_homeomorph.continuous_on.comp_continuous
     (total_space_mk_inducing R F E b).continuous (λ x, e.mem_source.mpr hb)),
-<<<<<<< HEAD
-  continuous_inv_fun := begin
-    rw (total_space_mk_inducing R F E b).continuous_iff,
-    exact e.continuous_on_symm.comp_continuous (continuous_const.prod_mk continuous_id)
-      (λ x, mk_mem_prod hb (mem_univ x)),
-  end,
-  .. e.linear_equiv_at b hb }
-||||||| parent of a50e26a531... do stuff
-  continuous_inv_fun := begin
-    rw (topological_vector_bundle.total_space_mk_inducing R F E b).continuous_iff,
-    exact e.continuous_on_symm.comp_continuous (continuous_const.prod_mk continuous_id)
-      (λ x, mk_mem_prod hb (mem_univ x)),
-  end,
-  .. e.to_pretrivialization.linear_equiv_at b hb }
-=======
   continuous_inv_fun := (e.symmL b).continuous,
   .. e.to_pretrivialization.linear_equiv_at b hb }
->>>>>>> a50e26a531... do stuff
 
 lemma coe_continuous_linear_equiv_at_eq (e : trivialization R F E) {b : B} (hb : b ∈ e.base_set) :
   (e.continuous_linear_equiv_at b hb : E b → F) = e.continuous_linear_map_at b :=
