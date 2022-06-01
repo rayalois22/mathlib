@@ -142,8 +142,30 @@ begin
   exact lt_of_le_of_lt mvt half_eps_lt_eps,
 end
 
+lemma tendsto_uniformly_on_singleton_iff_tendsto
+{α : Type*} {β : Type*} {ι : Type*}
+[uniform_space β]
+{f : ι → α → β} {g : α → β} {l : filter ι} {x : α} :
+tendsto_uniformly_on f g l {x} ↔ tendsto (λ n : ι, f n x) l (𝓝 (g x)) :=
+begin
+  rw uniform.tendsto_nhds_right,
+  unfold tendsto,
+  rw filter.le_def,
+  simp_rw filter.mem_map',
+
+  split,
+  exact (λ h u hu, by simpa using eventually_iff.mp (h u hu)),
+  exact (λ h u hu, by simpa using eventually_iff.mp (h u hu)),
+end
+
+lemma tendsto_uniformly_on_of_empty
+{α : Type*} {β : Type*} {ι : Type*}
+[uniform_space β]
+{f : ι → α → β} {g : α → β} {l : filter ι} :
+tendsto_uniformly_on f g l ∅ :=
+λ u hu, by simp
+
 lemma uniform_convergence_of_uniform_convergence_derivatives
-  (hrpos : 0 < r)
   (hf : ∀ (n : ℕ), ∀ (y : E), y ∈ closed_ball x r → has_fderiv_at (f n) (f' n y) y)
   (hfg : ∀ (y : E), y ∈ closed_ball x r → tendsto (λ n, f n y) at_top (𝓝 (g y)))
   (hfg' : tendsto_uniformly_on f' g' at_top (closed_ball x r)) :
@@ -157,12 +179,22 @@ begin
   -- The first of these summands can be bounded using the fact that the difference
   -- quotients converge uniformly. The latter follows from the fact that `λ n, f n x` is
   -- a (not-necessarily uniform) cauchy sequence.
+
+  -- Trivial cases first: empty and singleton
+  cases (le_or_lt r 0) with hr,
+  cases lt_or_eq_of_le hr with hr',
+  { have : closed_ball x r = ∅, simp [hr'],
+    rw this,
+    exact tendsto_uniformly_on_of_empty, },
+  { simp [h, tendsto_uniformly_on_singleton_iff_tendsto.mpr (hfg x (by simp [h]))], },
+
+  -- Start of the main case
   refine uniform_cauchy_seq_on.tendsto_uniformly_on_of_tendsto _ hfg,
   rw metric.uniform_cauchy_seq_on_iff,
   intros ε hε,
 
   -- Get the bound for |f m x - f n x|
-  have := metric.cauchy_seq_iff.mp (hfg x (by simp [hrpos.le])).cauchy_seq,
+  have := metric.cauchy_seq_iff.mp (hfg x (by simp [h.le])).cauchy_seq,
   have two_inv_pos : 0 < (2 : ℝ)⁻¹, simp,
   have ε_over_two_pos : 0 < (2⁻¹ * ε),
   { exact mul_pos two_inv_pos hε.lt, },
@@ -172,7 +204,7 @@ begin
   -- of diam closed_ball x r = 2 * r. Choose N2 with this in mind
   have foo := metric.uniform_cauchy_seq_on_iff.mp hfg'.uniform_cauchy_seq_on,
   have : 0 < (2⁻¹ * r⁻¹ * ε),
-  { exact mul_pos (mul_pos (by norm_num) (by simp [hrpos])) hε.lt, },
+  { exact mul_pos (mul_pos (by norm_num) (by simp [h])) hε.lt, },
   specialize foo (2⁻¹ * r⁻¹ * ε) this.gt,
   cases foo with N2 hN2,
 
@@ -217,22 +249,22 @@ begin
   { intros y hy,
     rw ←dist_eq_norm,
     exact (hN2 y hy).le, },
-  have hxb : x ∈ closed_ball x r, simp [hrpos.le],
+  have hxb : x ∈ closed_ball x r, simp [h.le],
   have mvt := mean_value_theorem_for_differences (hf m) (hf n) this hy hxb,
   specialize hN1 m (ge_trans hm (by simp)) n (ge_trans hn (by simp)),
   rw dist_eq_norm at hN1,
 
   have : ε = (2⁻¹ * ε) + (2⁻¹ * ε), ring,
   rw this,
-  have : r⁻¹ * r = 1, { exact inv_mul_cancel hrpos.ne.symm, },
+  have : r⁻¹ * r = 1, { exact inv_mul_cancel h.ne.symm, },
 
   have : ∥y - x∥ * (∥y - x∥⁻¹ * ∥f m y - f n y - (f m x - f n x)∥) ≤ 2⁻¹ * ε,
   { have : ∥y - x∥ ≤ r, { rw [mem_closed_ball, dist_eq_norm] at hy, exact hy, },
     calc ∥y - x∥ * (∥y - x∥⁻¹ * ∥f m y - f n y - (f m x - f n x)∥) ≤ r * (2⁻¹ * r⁻¹ * ε) :
-      mul_le_mul this mvt (mul_nonneg (by simp) (by simp)) (hrpos.le)
+      mul_le_mul this mvt (mul_nonneg (by simp) (by simp)) (h.le)
     ... = 2⁻¹ * ε : begin
       ring_nf,
-      rw [mul_assoc, inv_mul_cancel hrpos.ne.symm],
+      rw [mul_assoc, inv_mul_cancel h.ne.symm],
       ring,
     end },
   exact add_lt_add_of_le_of_lt this hN1,
@@ -252,14 +284,11 @@ begin
   rw [has_fderiv_at_iff_tendsto, tendsto_nhds_nhds],
 
   -- Now some important auxiliary facts such as:
-  have hrpos : 0 < r,
-  { calc 0 ≤ dist y x : dist_nonneg ... < r : mem_ball.mp hy, },
-
   have hyc : y ∈ closed_ball x r,
   { exact (mem_ball.mp hy).le, },
 
   -- uniform convergence of the derivatives implies uniform convergence of the primal
-  have hfguc := uniform_convergence_of_uniform_convergence_derivatives hrpos hf hfg hfg',
+  have hfguc := uniform_convergence_of_uniform_convergence_derivatives hf hfg hfg',
 
   -- convergence of the primal and uniform convergence of the derivatives implies
   -- uniform convergence of the difference quotients
