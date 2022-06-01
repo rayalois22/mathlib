@@ -39,36 +39,7 @@ uniform convergence, limits of derivatives
 -/
 
 open finset filter metric
-open_locale uniformity filter
-
-section convenience_lemmas
-
-/-- Convenience lemma -/
-private lemma mul_cancel_inv_left₀ {a b : ℝ} (ha : a ≠ 0) : a⁻¹ * (a * b) = b :=
- begin
-  conv { congr, congr, skip, rw ←inv_inv a, },
-  have : a⁻¹ ≠ 0, simp [ha],
-  rw mul_inv_cancel_left₀ this,
-end
-
-/-- We'll need to apply the triangle ineqaulity twice, which is easier to do in lemma
-format -/
-private lemma norm_add_three_le {E : Type*} [semi_normed_group E] {a b c : E} :
-  ∥a + b + c∥ ≤ ∥a∥ + ∥b∥ + ∥c∥ :=
-begin
-  refine le_trans (norm_add_le _ _) _,
-  exact add_le_add (norm_add_le _ _) rfl.le,
-end
-
-/-- Convenience lemma for three way comparisons -/
-private lemma lt_of_lt_of_lt_of_le {a b c a' b' c': ℝ} :
-  a < a' → b < b' → c ≤ c' → a + b + c < a' + b' + c' :=
-begin
-  intros ha hb hc,
-  linarith [ha, hb, hc],
-end
-
-end convenience_lemmas
+open_locale uniformity filter topological_space
 
 section limits_of_derivatives
 
@@ -80,10 +51,10 @@ variables {E : Type*} [normed_group E] {𝕜 : Type*} {G : Type*}
 `∥z - y∥⁻¹ • (f_n z - f_n y)` converge to the difference quotients
 `∥z - y∥⁻¹ • (g z - g y)` -/
 lemma difference_quotients_converge
-  (hfg : ∀ (y : E), y ∈ closed_ball x r → tendsto (λ n, f n y) at_top (nhds (g y))) :
+  (hfg : ∀ (y : E), y ∈ closed_ball x r → tendsto (λ n, f n y) at_top (𝓝 (g y))) :
   ∀ y : E, y ∈ closed_ball x r → ∀ z : E, z ∈ closed_ball x r →
     tendsto (λ n : ℕ, (∥z - y∥⁻¹ : 𝕜) • (f n z - f n y))
-      at_top (nhds ((∥z - y∥⁻¹ : 𝕜) • (g z - g y))) :=
+      at_top (𝓝 ((∥z - y∥⁻¹ : 𝕜) • (g z - g y))) :=
 (λ y hy z hz, ((hfg z hz).sub (hfg y hy)).const_smul _)
 
 variables [normed_space ℝ E] [normed_space 𝕜 E] {f' : ℕ → (E → (E →L[𝕜] G))} {g' : E → (E →L[𝕜] G)}
@@ -143,7 +114,7 @@ _uniformly_ to `∥z - y∥⁻¹ • (g z - g y)` -/
 lemma difference_quotients_converge_uniformly
   (hrR : r < R)
   (hf : ∀ (n : ℕ), ∀ (y : E), y ∈ ball x R → has_fderiv_at (f n) (f' n y) y)
-  (hfg : ∀ (y : E), y ∈ closed_ball x r → tendsto (λ n, f n y) at_top (nhds (g y)))
+  (hfg : ∀ (y : E), y ∈ closed_ball x r → tendsto (λ n, f n y) at_top (𝓝 (g y)))
   (hfg' : tendsto_uniformly_on f' g' at_top (closed_ball x r)) :
   ∀ y : E, y ∈ closed_ball x r →
     tendsto_uniformly_on
@@ -191,7 +162,7 @@ lemma uniform_convergence_of_uniform_convergence_derivatives
   (hrpos : 0 < r)
   (hrR : r < R)
   (hf : ∀ (n : ℕ), ∀ (y : E), y ∈ ball x R → has_fderiv_at (f n) (f' n y) y)
-  (hfg : ∀ (y : E), y ∈ closed_ball x r → tendsto (λ n, f n y) at_top (nhds (g y)))
+  (hfg : ∀ (y : E), y ∈ closed_ball x r → tendsto (λ n, f n y) at_top (𝓝 (g y)))
   (hfg' : tendsto_uniformly_on f' g' at_top (closed_ball x r)) :
   tendsto_uniformly_on f g at_top (closed_ball x r) :=
 begin
@@ -289,7 +260,7 @@ converge _uniformly_ to their limit. -/
 lemma has_fderiv_at_of_tendsto_uniformly_on
   (hrR : r < R)
   (hf : ∀ (n : ℕ), ∀ (y : E), y ∈ ball x R → has_fderiv_at (f n) (f' n y) y)
-  (hfg : ∀ (y : E), y ∈ closed_ball x r → tendsto (λ n, f n y) at_top (nhds (g y)))
+  (hfg : ∀ (y : E), y ∈ closed_ball x r → tendsto (λ n, f n y) at_top (𝓝 (g y)))
   (hfg' : tendsto_uniformly_on f' g' at_top (closed_ball x r)) :
   ∀ y : E, y ∈ ball x r → has_fderiv_at g (g' y) y :=
 begin
@@ -385,9 +356,9 @@ begin
     ∥x' - y∥⁻¹ * ∥((f' N y - g' y) (x' - y))∥ : begin
       rw [←mul_add (∥x' - y∥⁻¹) _ _, ←mul_add (∥x' - y∥⁻¹) _ _],
       have : ∥x' - y∥⁻¹ ≤ ∥x' - y∥⁻¹, exact le_refl _,
-      refine mul_le_mul this norm_add_three_le (by simp) (by simp)
+      refine mul_le_mul this norm_add₃_le (by simp) (by simp)
     end
-  ... < 3⁻¹ * ε + 3⁻¹ * ε + 3⁻¹ * ε : lt_of_lt_of_lt_of_le hN2 hf hN1
+  ... < 3⁻¹ * ε + 3⁻¹ * ε + 3⁻¹ * ε : add_lt_add_of_lt_of_le (add_lt_add hN2 hf) hN1
   ... = ε : by ring,
 end
 
