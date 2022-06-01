@@ -21,11 +21,11 @@ namespace functor
 
 structure is_localization :=
 (inverts_W : W.is_inverted_by L)
-(is_equivalence : is_equivalence (localization.lift L inverts_W))
+(is_equivalence : is_equivalence (localization.construction.lift L inverts_W))
 
 structure is_strict_localization :=
 (inverts_W : W.is_inverted_by L)
-(is_isomorphism : is_category_isomorphism (localization.lift L inverts_W))
+(is_isomorphism : is_category_isomorphism (localization.construction.lift L inverts_W))
 
 namespace is_strict_localization
 
@@ -46,11 +46,11 @@ structure universal_property_fixed_target :=
 (uniq : ∀ (G₁ G₂ : D ⥤ E), L ⋙ G₁ = L ⋙ G₂ → G₁ = G₂)
 
 def universal_property_localization_fixed_target :
-  universal_property_fixed_target (localization.Q W) W E :=
-{ inverts_W := localization.W_is_inverted_by_Q W,
-  lift := localization.lift,
-  fac := localization.fac,
-  uniq := localization.uniq, }
+  universal_property_fixed_target (W.Q) W E :=
+{ inverts_W := W.is_inverted_by_Q,
+  lift := localization.construction.lift,
+  fac := localization.construction.fac,
+  uniq := localization.construction.uniq, }
 
 variable {E}
 
@@ -77,7 +77,7 @@ def mk'
   is_strict_localization L W :=
 { inverts_W := h₁.inverts_W,
   is_isomorphism := is_category_isomorphism.of_category_isomorphism
-    (uniqueness_localization W (localization.Q W) L
+    (uniqueness_localization W W.Q L
     (universal_property_localization_fixed_target W D) h₁
     (universal_property_localization_fixed_target W W.localization) h₂), }
 
@@ -85,25 +85,25 @@ variables {L W}
 variable (hL : is_strict_localization L W)
 
 def lift (F : C ⥤ E) (hF : W.is_inverted_by F) : D ⥤ E :=
-hL.is_isomorphism.inverse ⋙ localization.lift F hF
+hL.is_isomorphism.inverse ⋙ localization.construction.lift F hF
 
 lemma fac (F : C ⥤ E) (hF : W.is_inverted_by F) :
   L ⋙ hL.lift F hF = F :=
 begin
   dsimp [lift],
   rw ← functor.assoc,
-  conv_lhs { congr, congr, rw ← localization.fac L hL.inverts_W, },
-  rw [functor.assoc (localization.Q W), ← hL.is_isomorphism.unit_eq,
-    functor.comp_id, localization.fac],
+  conv_lhs { congr, congr, rw ← localization.construction.fac L hL.inverts_W, },
+  rw [functor.assoc W.Q, ← hL.is_isomorphism.unit_eq,
+    functor.comp_id, localization.construction.fac],
 end
 
 include hL
 
 lemma uniq (F₁ F₂ : D ⥤ E) (eq : L ⋙ F₁ = L ⋙ F₂) : F₁ = F₂ :=
 begin
-  rw [← localization.fac L hL.inverts_W, functor.assoc, functor.assoc] at eq,
+  rw [← localization.construction.fac L hL.inverts_W, functor.assoc, functor.assoc] at eq,
   rw [← functor.id_comp F₁, ← functor.id_comp F₂, ← hL.is_isomorphism.counit_eq,
-    functor.assoc, functor.assoc, localization.uniq _ _ eq],
+    functor.assoc, functor.assoc, localization.construction.uniq _ _ eq],
 end
 
 def inv (w : W) : L.obj (w.1.right) ⟶ L.obj (w.1.left) :=
@@ -113,14 +113,14 @@ begin
 end
 
 def obj_equiv : C ≃ D :=
-(localization.obj_equiv W).trans
+(localization.construction.obj_equiv W).trans
 hL.is_isomorphism.to_category_isomorphism.obj_equiv
 
 @[simp]
 lemma obj_equiv_to_fun (X : C) : hL.obj_equiv.to_fun X = L.obj X :=
 begin
   dsimp [obj_equiv],
-  simpa only [category_isomorphism.obj_equiv_apply, localization.lift_obj,
+  simpa only [category_isomorphism.obj_equiv_apply, localization.construction.lift_obj,
     is_category_isomorphism.to_category_isomorphism_functor],
 end
 
@@ -141,10 +141,10 @@ begin
     simp only [category_isomorphism.arrow_equiv_apply,
       is_category_isomorphism.to_category_isomorphism_functor] at hg,
     subst hg,
-    let F := localization.lift L hL.inverts_W,
+    let F := localization.construction.lift L hL.inverts_W,
     let G : _ ⥤ W.localization := quotient.functor _,
-    suffices : ∀ (X₁ X₂ : C) (p : localization.ι_paths W X₁ ⟶
-      localization.ι_paths W X₂), arrow.mk (F.map (G.map p)) ∈ A,
+    suffices : ∀ (X₁ X₂ : C) (p : localization.construction.ι_paths W X₁ ⟶
+      localization.construction.ι_paths W X₂), arrow.mk (F.map (G.map p)) ∈ A,
     { rcases g with ⟨⟨⟨X⟩⟩, ⟨⟨Y⟩⟩, g⟩,
       dsimp at g,
       convert this _ _ (G.preimage g),
@@ -153,7 +153,7 @@ begin
     intros X₁ X₂ p,
     induction p with X₂ X₃ p f hp,
     { simpa only [map_arrow_obj_arrow_mk, L.map_id] using hA₁ (arrow.mk (𝟙 X₁)), },
-    { let φ : (_ : paths (localization.loc_quiver W)) ⟶ _ := p,
+    { let φ : (_ : paths (localization.construction.loc_quiver W)) ⟶ _ := p,
       rw [show p.cons f = φ ≫ quiver.hom.to_path f, by refl],
       simp only [functor.map_comp],
       apply hA₃ _ _ hp,
