@@ -356,7 +356,8 @@ begin
     ∥x' - y∥⁻¹ * ∥((f' N y - g' y) (x' - y))∥ : begin
       rw [←mul_add (∥x' - y∥⁻¹) _ _, ←mul_add (∥x' - y∥⁻¹) _ _],
       have : ∥x' - y∥⁻¹ ≤ ∥x' - y∥⁻¹, exact le_refl _,
-      refine mul_le_mul this norm_add₃_le (by simp) (by simp)
+      refine mul_le_mul this _ (by simp) (by simp),
+      exact norm_add₃_le _ _ _,
     end
   ... < 3⁻¹ * ε + 3⁻¹ * ε + 3⁻¹ * ε : add_lt_add_of_lt_of_le (add_lt_add hN2 hf) hN1
   ... = ε : by ring,
