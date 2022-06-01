@@ -43,13 +43,13 @@ variables {E : Type*} [normed_group E] [normed_space ℝ E]
   {𝕜 : Type*} [is_R_or_C 𝕜] [normed_space 𝕜 E]
   {G : Type*} [normed_group G] [normed_space 𝕜 G]
   {f : ℕ → E → G} {g : E → G} {f' : ℕ → (E → (E →L[𝕜] G))} {g' : E → (E →L[𝕜] G)}
-  {x y z : E} {r R C : ℝ}
+  {x y z : E} {r C : ℝ}
 
 /-- A convenience theorem for utilizing the mean value theorem for differences of
 differentiable functions -/
 lemma mean_value_theorem_for_differences {f : E → G} {f' : E → (E →L[𝕜] G)}
-  (hrR : r < R) (hf : ∀ (y : E), y ∈ ball x R → has_fderiv_at f (f' y) y)
-  (hg : ∀ (y : E), y ∈ ball x R → has_fderiv_at g (g' y) y)
+  (hf : ∀ (y : E), y ∈ closed_ball x r → has_fderiv_at f (f' y) y)
+  (hg : ∀ (y : E), y ∈ closed_ball x r → has_fderiv_at g (g' y) y)
   (hbound : ∀ (y : E), y ∈ closed_ball x r → ∥f' y - g' y∥ ≤ C)
   (hy : y ∈ closed_ball x r) (hz : z ∈ closed_ball x r) :
   ∥y - z∥⁻¹ * ∥(f y - g y) - (f z - g z)∥ ≤ C :=
@@ -64,8 +64,7 @@ begin
   have hderiv : ∀ (y : E), y ∈ closed_ball x r →
     has_fderiv_within_at (f - g) ((f' - g') y) (closed_ball x r) y,
   { intros y hy,
-    have : y ∈ ball x R, {calc dist y x ≤ r : hy ... < R : hrR,},
-    have := ((hf y this).sub (hg y this)).has_fderiv_within_at,
+    have := ((hf y hy).sub (hg y hy)).has_fderiv_within_at,
     simp only [pi.sub_apply],
     have : (λ x : E, f x - g x) = f - g, { funext, simp only [pi.sub_apply], },
     rwa ←this, },
@@ -98,8 +97,7 @@ end
 in fact for a fixed `y`, the difference quotients `∥z - y∥⁻¹ • (f_n z - f_n y)` converge
 _uniformly_ to `∥z - y∥⁻¹ • (g z - g y)` -/
 lemma difference_quotients_converge_uniformly
-  (hrR : r < R)
-  (hf : ∀ (n : ℕ), ∀ (y : E), y ∈ ball x R → has_fderiv_at (f n) (f' n y) y)
+  (hf : ∀ (n : ℕ), ∀ (y : E), y ∈ closed_ball x r → has_fderiv_at (f n) (f' n y) y)
   (hfg : ∀ (y : E), y ∈ closed_ball x r → tendsto (λ n, f n y) at_top (𝓝 (g y)))
   (hfg' : tendsto_uniformly_on f' g' at_top (closed_ball x r)) :
   ∀ y : E, y ∈ closed_ball x r →
@@ -132,7 +130,7 @@ begin
   { intros y hy,
     rw ←dist_eq_norm,
     exact (hN y hy).le, },
-  have mvt := mean_value_theorem_for_differences hrR (hf m) (hf n) this hz hy,
+  have mvt := mean_value_theorem_for_differences (hf m) (hf n) this hz hy,
 
   rw [dist_eq_norm, ←smul_sub, norm_smul, norm_inv, is_R_or_C.norm_coe_norm],
   -- This would work with `ring` but this is no longer a `ring`. Is there a
@@ -146,8 +144,7 @@ end
 
 lemma uniform_convergence_of_uniform_convergence_derivatives
   (hrpos : 0 < r)
-  (hrR : r < R)
-  (hf : ∀ (n : ℕ), ∀ (y : E), y ∈ ball x R → has_fderiv_at (f n) (f' n y) y)
+  (hf : ∀ (n : ℕ), ∀ (y : E), y ∈ closed_ball x r → has_fderiv_at (f n) (f' n y) y)
   (hfg : ∀ (y : E), y ∈ closed_ball x r → tendsto (λ n, f n y) at_top (𝓝 (g y)))
   (hfg' : tendsto_uniformly_on f' g' at_top (closed_ball x r)) :
   tendsto_uniformly_on f g at_top (closed_ball x r) :=
@@ -221,7 +218,7 @@ begin
     rw ←dist_eq_norm,
     exact (hN2 y hy).le, },
   have hxb : x ∈ closed_ball x r, simp [hrpos.le],
-  have mvt := mean_value_theorem_for_differences hrR (hf m) (hf n) this hy hxb,
+  have mvt := mean_value_theorem_for_differences (hf m) (hf n) this hy hxb,
   specialize hN1 m (ge_trans hm (by simp)) n (ge_trans hn (by simp)),
   rw dist_eq_norm at hN1,
 
@@ -244,8 +241,7 @@ end
 /-- (d/dx) lim_{n → ∞} f_n x = lim_{n → ∞} f'_n x on a closed ball when the f'_n
 converge _uniformly_ to their limit. -/
 lemma has_fderiv_at_of_tendsto_uniformly_on
-  (hrR : r < R)
-  (hf : ∀ (n : ℕ), ∀ (y : E), y ∈ ball x R → has_fderiv_at (f n) (f' n y) y)
+  (hf : ∀ (n : ℕ), ∀ (y : E), y ∈ closed_ball x r → has_fderiv_at (f n) (f' n y) y)
   (hfg : ∀ (y : E), y ∈ closed_ball x r → tendsto (λ n, f n y) at_top (𝓝 (g y)))
   (hfg' : tendsto_uniformly_on f' g' at_top (closed_ball x r)) :
   ∀ y : E, y ∈ ball x r → has_fderiv_at g (g' y) y :=
@@ -263,11 +259,11 @@ begin
   { exact (mem_ball.mp hy).le, },
 
   -- uniform convergence of the derivatives implies uniform convergence of the primal
-  have hfguc := uniform_convergence_of_uniform_convergence_derivatives hrpos hrR hf hfg hfg',
+  have hfguc := uniform_convergence_of_uniform_convergence_derivatives hrpos hf hfg hfg',
 
   -- convergence of the primal and uniform convergence of the derivatives implies
   -- uniform convergence of the difference quotients
-  have hdiff := difference_quotients_converge_uniformly hrR hf hfg hfg' y hyc,
+  have hdiff := difference_quotients_converge_uniformly hf hfg hfg' y hyc,
 
   -- The first (ε / 3) comes from the convergence of the derivatives
   intros ε hε,
@@ -290,7 +286,7 @@ begin
   let N := max N1 N2,
 
   -- The final (ε / 3) comes from the definition of a derivative
-  specialize hf N y (calc dist y x < r : hy ... < R : hrR),
+  specialize hf N y hyc,
   rw [has_fderiv_at_iff_tendsto, tendsto_nhds_nhds] at hf,
   specialize hf (3⁻¹ * ε) ε_over_three_pos.gt,
   rcases hf with ⟨δ', hδ', hf⟩,
