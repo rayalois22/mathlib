@@ -43,21 +43,11 @@ open_locale uniformity filter topological_space
 
 section limits_of_derivatives
 
-variables {E : Type*} [normed_group E] {𝕜 : Type*} {G : Type*}
-  [is_R_or_C 𝕜] [normed_group G] [normed_space 𝕜 G]
-  {f : ℕ → E → G} {g : E → G} {x y z : E} {r R C : ℝ}
-
-/-- For fixed y and z, if `f_n → g` pointwise, then the difference quotients
-`∥z - y∥⁻¹ • (f_n z - f_n y)` converge to the difference quotients
-`∥z - y∥⁻¹ • (g z - g y)` -/
-lemma difference_quotients_converge
-  (hfg : ∀ (y : E), y ∈ closed_ball x r → tendsto (λ n, f n y) at_top (𝓝 (g y))) :
-  ∀ y : E, y ∈ closed_ball x r → ∀ z : E, z ∈ closed_ball x r →
-    tendsto (λ n : ℕ, (∥z - y∥⁻¹ : 𝕜) • (f n z - f n y))
-      at_top (𝓝 ((∥z - y∥⁻¹ : 𝕜) • (g z - g y))) :=
-(λ y hy z hz, ((hfg z hz).sub (hfg y hy)).const_smul _)
-
-variables [normed_space ℝ E] [normed_space 𝕜 E] {f' : ℕ → (E → (E →L[𝕜] G))} {g' : E → (E →L[𝕜] G)}
+variables {E : Type*} [normed_group E] [normed_space ℝ E]
+  {𝕜 : Type*} [is_R_or_C 𝕜] [normed_space 𝕜 E]
+  {G : Type*} [normed_group G] [normed_space 𝕜 G]
+  {f : ℕ → E → G} {g : E → G} {f' : ℕ → (E → (E →L[𝕜] G))} {g' : E → (E →L[𝕜] G)}
+  {x y z : E} {r R C : ℝ}
 
 /-- A convenience theorem for utilizing the mean value theorem for differences of
 differentiable functions -/
@@ -126,7 +116,7 @@ begin
   -- convergence of the difference of derivatives
   intros y hy,
   refine uniform_cauchy_seq_on.tendsto_uniformly_on_of_tendsto _
-    (difference_quotients_converge hfg y hy),
+    (λ z hz, ((hfg z hz).sub (hfg y hy)).const_smul _),
   rw uniform_cauchy_seq_on_iff,
   intros ε hε,
   have := hfg'.uniform_cauchy_seq_on,
