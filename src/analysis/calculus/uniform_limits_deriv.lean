@@ -48,21 +48,19 @@ variables {E : Type*} [normed_group E] [normed_space ℝ E]
 /-- A convenience theorem for utilizing the mean value theorem for differences of
 differentiable functions -/
 lemma mean_value_theorem_for_differences {f : E → G} {f' : E → (E →L[𝕜] G)}
-  (hf : ∀ (y : E), y ∈ closed_ball x r → has_fderiv_at f (f' y) y)
-  (hg : ∀ (y : E), y ∈ closed_ball x r → has_fderiv_at g (g' y) y)
-  (hbound : ∀ (y : E), y ∈ closed_ball x r → ∥f' y - g' y∥ ≤ C)
-  (hy : y ∈ closed_ball x r) (hz : z ∈ closed_ball x r) :
+  {s : set E} (hs : convex ℝ s)
+  (hf : ∀ (y : E), y ∈ s → has_fderiv_at f (f' y) y)
+  (hg : ∀ (y : E), y ∈ s → has_fderiv_at g (g' y) y)
+  (hbound : ∀ (y : E), y ∈ s → ∥f' y - g' y∥ ≤ C)
+  (hy : y ∈ s) (hz : z ∈ s) :
   ∥y - z∥⁻¹ * ∥(f y - g y) - (f z - g z)∥ ≤ C :=
 begin
   -- Differences of differentiable functions are differentiable and closed balls are
   -- convex, so a bit of annoying symbol pushing will get us the actual theorem
 
-  -- Closed balls are convex
-  have hconvex := convex_closed_ball x r,
-
   -- Differences of differentiable functions are differentiable
-  have hderiv : ∀ (y : E), y ∈ closed_ball x r →
-    has_fderiv_within_at (f - g) ((f' - g') y) (closed_ball x r) y,
+  have hderiv : ∀ (y : E), y ∈ s →
+    has_fderiv_within_at (f - g) ((f' - g') y) s y,
   { intros y hy,
     have := ((hf y hy).sub (hg y hy)).has_fderiv_within_at,
     simp only [pi.sub_apply],
@@ -71,7 +69,7 @@ begin
 
   -- Apply the mean value theorem
   have := convex.norm_image_sub_le_of_norm_has_fderiv_within_le
-    hderiv hbound hconvex hz hy,
+    hderiv hbound hs hz hy,
 
   -- Auxiliary lemmas necessary for algebraic manipulation
   have h_le : ∥y - z∥⁻¹ ≤ ∥y - z∥⁻¹, { exact le_refl _, },
@@ -130,7 +128,7 @@ begin
   { intros y hy,
     rw ←dist_eq_norm,
     exact (hN y hy).le, },
-  have mvt := mean_value_theorem_for_differences (hf m) (hf n) this hz hy,
+  have mvt := mean_value_theorem_for_differences (convex_closed_ball x r) (hf m) (hf n) this hz hy,
 
   rw [dist_eq_norm, ←smul_sub, norm_smul, norm_inv, is_R_or_C.norm_coe_norm],
   -- This would work with `ring` but this is no longer a `ring`. Is there a
@@ -250,7 +248,7 @@ begin
     rw ←dist_eq_norm,
     exact (hN2 y hy).le, },
   have hxb : x ∈ closed_ball x r, simp [h.le],
-  have mvt := mean_value_theorem_for_differences (hf m) (hf n) this hy hxb,
+  have mvt := mean_value_theorem_for_differences (convex_closed_ball x r) (hf m) (hf n) this hy hxb,
   specialize hN1 m (ge_trans hm (by simp)) n (ge_trans hn (by simp)),
   rw dist_eq_norm at hN1,
 
