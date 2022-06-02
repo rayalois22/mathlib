@@ -95,13 +95,14 @@ end
 in fact for a fixed `y`, the difference quotients `∥z - y∥⁻¹ • (f_n z - f_n y)` converge
 _uniformly_ to `∥z - y∥⁻¹ • (g z - g y)` -/
 lemma difference_quotients_converge_uniformly
-  (hf : ∀ (n : ℕ), ∀ (y : E), y ∈ closed_ball x r → has_fderiv_at (f n) (f' n y) y)
-  (hfg : ∀ (y : E), y ∈ closed_ball x r → tendsto (λ n, f n y) at_top (𝓝 (g y)))
-  (hfg' : tendsto_uniformly_on f' g' at_top (closed_ball x r)) :
-  ∀ y : E, y ∈ closed_ball x r →
+  {s : set E} (hs : convex ℝ s)
+  (hf : ∀ (n : ℕ), ∀ (y : E), y ∈ s → has_fderiv_at (f n) (f' n y) y)
+  (hfg : ∀ (y : E), y ∈ s → tendsto (λ n, f n y) at_top (𝓝 (g y)))
+  (hfg' : tendsto_uniformly_on f' g' at_top s) :
+  ∀ y : E, y ∈ s →
     tendsto_uniformly_on
       (λ n : ℕ, λ z : E, (∥z - y∥⁻¹ : 𝕜) • ((f n z) - (f n y)))
-      (λ z : E, (∥z - y∥⁻¹ : 𝕜) • ((g z) - (g y))) at_top ((closed_ball x r)) :=
+      (λ z : E, (∥z - y∥⁻¹ : 𝕜) • ((g z) - (g y))) at_top s :=
 begin
   -- Proof strategy: Rewrite the Cauchy sequence of difference quotients as
   -- a difference quotient. Then apply the mean value theorem and the uniform
@@ -124,11 +125,11 @@ begin
   use N,
   intros m hm n hn z hz,
   specialize hN m hm n hn,
-  have : ∀ (x_1 : E), x_1 ∈ closed_ball x r → ∥f' m x_1 - f' n x_1∥ ≤ 2⁻¹ * ε,
+  have : ∀ (x_1 : E), x_1 ∈ s → ∥f' m x_1 - f' n x_1∥ ≤ 2⁻¹ * ε,
   { intros y hy,
     rw ←dist_eq_norm,
     exact (hN y hy).le, },
-  have mvt := mean_value_theorem_for_differences (convex_closed_ball x r) (hf m) (hf n) this hz hy,
+  have mvt := mean_value_theorem_for_differences hs (hf m) (hf n) this hz hy,
 
   rw [dist_eq_norm, ←smul_sub, norm_smul, norm_inv, is_R_or_C.norm_coe_norm],
   -- This would work with `ring` but this is no longer a `ring`. Is there a
@@ -290,7 +291,7 @@ begin
 
   -- convergence of the primal and uniform convergence of the derivatives implies
   -- uniform convergence of the difference quotients
-  have hdiff := difference_quotients_converge_uniformly hf hfg hfg' y hyc,
+  have hdiff := difference_quotients_converge_uniformly (convex_closed_ball x r) hf hfg hfg' y hyc,
 
   -- The first (ε / 3) comes from the convergence of the derivatives
   intros ε hε,
