@@ -65,8 +65,8 @@ section nat
 
 variables {𝒢 : filtration (with_top ℕ) mα} {g : (with_top ℕ) → α → β}
 
-instance with_top.encodable {α} [encodable α] : encodable (with_top α) := encodable.option
-instance with_bot.encodable {α} [encodable α] : encodable (with_bot α) := encodable.option
+instance with_top.encodable {α} [encodable α] : encodable (with_top α) := option.encodable
+instance with_bot.encodable {α} [encodable α] : encodable (with_bot α) := option.encodable
 
 instance : is_well_order (with_top ℕ) (<) := ⟨with_top.well_founded_lt nat.lt_wf⟩
 

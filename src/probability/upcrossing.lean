@@ -49,6 +49,13 @@ lemma first_gt_before_le_succ {f : with_top ℕ → α → ℝ} {c : ℝ} {n : �
   first_gt_before f c n x ≤ n + 1 :=
 min_le_right _ _
 
+lemma gt_of_first_gt_before_eq {f : with_top ℕ → α → ℝ} {c : ℝ} {n k : ℕ} {x : α}
+  (h : first_gt_before f c n x = k) :
+  c < f k x :=
+begin
+  sorry,
+end
+
 lemma is_stopping_time_first_gt_before (f : with_top ℕ → α → ℝ) (c : ℝ) (n : ℕ) (h : adapted ℱ f) :
   is_stopping_time ℱ (first_gt_before f c n) :=
 (is_stopping_time_hitting_time h (measurable_set_lt measurable_const measurable_id)).min
@@ -105,19 +112,28 @@ begin
     have : c < sup_norm_Iic f n x ↔ τ x ≤ n,
       from sup_norm_Iic_gt_iff_first_gt_before_le hf_nonneg,
     rw [set.mem_set_of_eq, this],
-    simp,
+    simp only [set.mem_Union, set.mem_set_of_eq, exists_prop],
+    refine ⟨λ hyp, _, λ hyp, _⟩,
+    sorry,
     sorry, },
   rw this,
   calc ennreal.of_real c * μ (⋃ (k : ℕ) (H : k ≤ n), {x : α | τ x = k})
-      ≤ ennreal.of_real c * ∑ k in finset.range n, μ {x : α | τ x = k} : sorry
-  ... = ∑ k in finset.range n, ennreal.of_real c * μ {x : α | τ x = k} : finset.mul_sum
-  ... = ∑ k in finset.range n, ennreal.of_real c *
+      ≤ ennreal.of_real c * ∑ k in finset.range (n+1), μ {x : α | τ x = k} : begin
+      refine ennreal.mul_le_mul le_rfl _,
+      refine le_trans (le_of_eq _) (measure_bUnion_finset_le _ _),
+      congr' with k x,
+      simp only [set.mem_Union, set.mem_set_of_eq, exists_prop, finset.mem_range,
+        and.congr_left_iff],
+      exact λ _, nat.lt_succ_iff.symm,
+    end
+  ... = ∑ k in finset.range (n+1), ennreal.of_real c * μ {x : α | τ x = k} : finset.mul_sum
+  ... = ∑ k in finset.range (n+1), ennreal.of_real c *
     ∫⁻ x in{x : α | τ x = k}, (λ _, (1 : ℝ≥0∞)) x ∂μ :
       by simp_rw [lintegral_const, measure.restrict_apply_univ, one_mul]
-  ... = ∑ k in finset.range n, ennreal.of_real c *
+  ... = ∑ k in finset.range (n+1), ennreal.of_real c *
     ∫⁻ x, {x : α | τ x = k}.indicator (λ _, (1 : ℝ≥0∞)) x ∂μ :
       by { congr, ext1 k, rw lintegral_indicator _ (ℱ.le k _ (hτ_stop.measurable_set_eq k)), }
-  ... = ∑ k in finset.range n,
+  ... = ∑ k in finset.range (n+1),
     ∫⁻ x, {x : α | τ x = k}.indicator (λ _, ennreal.of_real c) x ∂μ : begin
       congr,
       ext1 k,
@@ -126,12 +142,12 @@ begin
       { exact measurable.indicator (by apply measurable_const)
           (ℱ.le k _ (hτ_stop.measurable_set_eq k)), },
     end
-  ... ≤ ∑ k in finset.range n,
+  ... ≤ ∑ k in finset.range (n+1),
     ∫⁻ x, {x : α | τ x = k}.indicator (λ x, ennreal.of_real (f k x)) x ∂μ : begin
       refine finset.sum_le_sum (λ k hk, _),
       sorry,
     end
-  ... = ∑ k in finset.range n,
+  ... = ∑ k in finset.range (n+1),
     ennreal.of_real ∫ x, {x : α | τ x = k}.indicator (f k) x ∂μ : begin
       congr,
       ext1 k,
@@ -140,23 +156,33 @@ begin
       sorry,
       sorry,
     end
-  ... ≤ ∑ k in finset.range n,
+  ... ≤ ∑ k in finset.range (n+1),
     ennreal.of_real ∫ x, {x : α | τ x = k}.indicator (μ[f n | ℱ k]) x ∂μ : begin
-      refine finset.sum_le_sum (λ k hk, _),
-      refine ennreal.of_real_le_of_real _,
+      refine finset.sum_le_sum (λ k hk, ennreal.of_real_le_of_real _),
+      refine integral_mono_ae _ _ _,
+      { exact (h.integrable _).indicator (ℱ.le _ _ (hτ_stop.measurable_set_eq (k : with_top ℕ))), },
+      { exact integrable_condexp.indicator
+          (ℱ.le _ _ (hτ_stop.measurable_set_eq (k : with_top ℕ))),},
+      rw finset.mem_range at hk,
+      have h_le : (k : with_top ℕ) ≤ n, sorry,
+      filter_upwards [h.ae_le_condexp h_le] with x hx,
+      by_cases hτx : τ x = (k : with_top ℕ),
+      { simpa only [hτx, set.indicator_of_mem, set.mem_set_of_eq] using hx, },
+      { simp only [hτx, set.indicator_of_not_mem, set.mem_set_of_eq, not_false_iff], },
       sorry,
-      sorry,  -- use submartingale
     end
-  ... = ∑ k in finset.range n,
+  ... = ∑ k in finset.range (n+1),
     ennreal.of_real ∫ x, {x : α | τ x = k}.indicator (f n) x ∂μ : begin
+      sorry,
+      sorry,
       congr,
       ext1 k,
       congr' 1,
       simp_rw integral_indicator (ℱ.le k _ (hτ_stop.measurable_set_eq k)),
       exact set_integral_condexp _ (h.integrable n) (hτ_stop.measurable_set_eq k),
     end
-  ... = ennreal.of_real ∑ k in finset.range n, ∫ x, {x : α | τ x = k}.indicator (f n) x ∂μ : sorry
-  ... = ennreal.of_real ∫ x, (∑ k in finset.range n, {x : α | τ x = k}.indicator (f n)) x ∂μ : sorry
+  ... = ennreal.of_real ∑ k in finset.range (n+1), ∫ x, {x : α | τ x = k}.indicator (f n) x ∂μ : sorry
+  ... = ennreal.of_real ∫ x, (∑ k in finset.range (n+1), {x : α | τ x = k}.indicator (f n)) x ∂μ : sorry
   ... = ennreal.of_real (∫ x in {x | c < sup_norm_Iic f n x}, f n x ∂μ) : sorry,
 end
 
