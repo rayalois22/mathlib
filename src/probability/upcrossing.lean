@@ -187,3 +187,6 @@ begin
 end
 
 end probability_theory
+
+
+example : 0 = 0 := rfl
