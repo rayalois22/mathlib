@@ -37,6 +37,131 @@ uniform convergence, limits of derivatives
 open finset filter metric
 open_locale uniformity filter topological_space
 
+section uniform
+
+variables {α : Type*} {β : Type*} {ι : Type*} [uniform_space β]
+  {f f' : ι → α → β} {g g' : α → β} {l : filter ι} {x : α} {s : set α}
+
+lemma tendsto_uniformly_on_singleton_iff_tendsto :
+  tendsto_uniformly_on f g l {x} ↔ tendsto (λ n : ι, f n x) l (𝓝 (g x)) :=
+begin
+  rw uniform.tendsto_nhds_right,
+  unfold tendsto,
+  rw filter.le_def,
+  simp_rw filter.mem_map',
+
+  split,
+  exact (λ h u hu, by simpa using eventually_iff.mp (h u hu)),
+  exact (λ h u hu, by simpa using eventually_iff.mp (h u hu)),
+end
+
+lemma tendsto_uniformly_on_of_empty :
+  tendsto_uniformly_on f g l ∅ :=
+λ u hu, by simp
+
+lemma silly {p : ι × ι → Prop} :
+  (∀ᶠ i in (l ×ᶠ l), p i) → (∀ᶠ i in l, p (i, i)) :=
+begin
+  intros h,
+  rw eventually_iff,
+  rw eventually_iff at h,
+  rw mem_prod_iff at h,
+  rcases h with ⟨t, ht, s, hs, hst⟩,
+  have ht_in_l : t ∩ s ∈ l, simp [hs, ht],
+  refine l.sets_of_superset ht_in_l _,
+  rw set.subset_def,
+  intros x hx,
+  have := calc (x, x) ∈ (t ∩ s) ×ˢ (t ∩ s) : by simpa using hx
+    ... ⊆ t ×ˢ s : begin
+      rw set.subset_def,
+      intros y hy,
+      simp at hy,
+      simp [hy],
+    end
+    ... ⊆ {x : ι × ι | p x} : hst,
+  simpa using this,
+end
+
+section add_group
+variables [add_group β] [uniform_add_group β]
+
+lemma tendsto_uniformly_on.add
+  (hf : tendsto_uniformly_on f g l s)
+  (hf' : tendsto_uniformly_on f' g' l s) :
+  tendsto_uniformly_on (f + f') (g + g') l s :=
+λ u hu, silly (((hf.prod hf').comp' uniform_continuous_add) u hu)
+
+lemma tendsto_uniformly_on.sub
+  (hf : tendsto_uniformly_on f g l s)
+  (hf' : tendsto_uniformly_on f' g' l s) :
+  tendsto_uniformly_on (f - f') (g - g') l s :=
+λ u hu, silly (((hf.prod hf').comp' uniform_continuous_sub) u hu)
+
+end add_group
+
+lemma uniform_cauchy_seq_on.mono {s' : set α}
+  (hf : uniform_cauchy_seq_on f l s) (hss' : s' ⊆ s) :
+  uniform_cauchy_seq_on f l s' :=
+λ u hu, (hf u hu).mono (λ x hx y hy, hx y (hss' hy))
+
+/-- Composing on the right by a function preserves uniform convergence -/
+lemma uniform_cauchy_seq_on.comp
+  {γ : Type*}
+  (hf : uniform_cauchy_seq_on f l s)
+  (g : γ → α) :
+  uniform_cauchy_seq_on (λ n, f n ∘ g) l (g ⁻¹' s) :=
+λ u hu, (hf u hu).mono (λ x hx y hy, hx (g y) hy)
+
+/-- Composing on the left by a uniformly continuous function preserves
+uniform convergence -/
+lemma uniform_cauchy_seq_on.comp'
+  {γ : Type*} [uniform_space γ]
+  (hf : uniform_cauchy_seq_on f l s)
+  {g : β → γ} (hg : uniform_continuous g) :
+  uniform_cauchy_seq_on (λ n, g ∘ (f n)) l s :=
+λ u hu, hf _ (hg hu)
+
+lemma uniform_cauchy_seq_on.prod' {β' : Type*} [uniform_space β']
+  {f' : ι → α → β'} {s : set α}
+  (h : uniform_cauchy_seq_on f l s) (h' : uniform_cauchy_seq_on f' l s) :
+  uniform_cauchy_seq_on (λ (i : ι) a, (f i a, f' i a)) l s :=
+begin
+  intros u hu,
+  rw uniformity_prod_eq_prod at hu,
+  rw filter.mem_map at hu,
+  rw mem_prod_iff at hu,
+  obtain ⟨t, ht, t', ht', htt'⟩ := hu,
+  specialize h t ht,
+  specialize h' t' ht',
+  have := silly (h.prod_mk h'),
+  apply this.mono,
+  intros x hx y hy,
+  cases hx with hxt hxt',
+  specialize hxt y hy,
+  specialize hxt' y hy,
+  simp at hxt hxt',
+  simp [hxt, hxt', htt'],
+  have := calc ((f x.fst y, f x.snd y), (f' x.fst y, f' x.snd y)) ∈ t ×ˢ t' : by simp [hxt, hxt']
+    ... ⊆ (λ (p : (β × β) × β' × β'), ((p.fst.fst, p.snd.fst), p.fst.snd, p.snd.snd)) ⁻¹' u : htt',
+  simpa using this,
+end
+
+section add_group
+variables [add_group β] [uniform_add_group β]
+
+lemma uniform_cauchy_seq_on.add
+  (hf : uniform_cauchy_seq_on f l s) (hf' : uniform_cauchy_seq_on f' l s) :
+  uniform_cauchy_seq_on (f + f') l s :=
+λ u hu, by simpa using (((hf.prod' hf').comp' uniform_continuous_add) u hu)
+
+lemma uniform_cauchy_seq_on.sub
+  (hf : uniform_cauchy_seq_on f l s) (hf' : uniform_cauchy_seq_on f' l s) :
+  uniform_cauchy_seq_on (f - f') l s :=
+λ u hu, by simpa using (((hf.prod' hf').comp' uniform_continuous_sub) u hu)
+
+end add_group
+end uniform
+
 section limits_of_derivatives
 
 variables {E : Type*} [normed_group E] [normed_space ℝ E]
@@ -140,29 +265,6 @@ begin
   rw this,
   exact lt_of_le_of_lt mvt half_eps_lt_eps,
 end
-
-lemma tendsto_uniformly_on_singleton_iff_tendsto
-{α : Type*} {β : Type*} {ι : Type*}
-[uniform_space β]
-{f : ι → α → β} {g : α → β} {l : filter ι} {x : α} :
-tendsto_uniformly_on f g l {x} ↔ tendsto (λ n : ι, f n x) l (𝓝 (g x)) :=
-begin
-  rw uniform.tendsto_nhds_right,
-  unfold tendsto,
-  rw filter.le_def,
-  simp_rw filter.mem_map',
-
-  split,
-  exact (λ h u hu, by simpa using eventually_iff.mp (h u hu)),
-  exact (λ h u hu, by simpa using eventually_iff.mp (h u hu)),
-end
-
-lemma tendsto_uniformly_on_of_empty
-{α : Type*} {β : Type*} {ι : Type*}
-[uniform_space β]
-{f : ι → α → β} {g : α → β} {l : filter ι} :
-tendsto_uniformly_on f g l ∅ :=
-λ u hu, by simp
 
 lemma uniform_convergence_of_uniform_convergence_derivatives
   (hf : ∀ (n : ℕ), ∀ (y : E), y ∈ closed_ball x r → has_fderiv_at (f n) (f' n y) y)
