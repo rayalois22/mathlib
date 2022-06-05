@@ -17,9 +17,6 @@ stated via `[quasi_sober α] [t0_space α]`.
 
 ## Main definition
 
-* `specializes` : `specializes x y` (`x ⤳ y`) means that `x` specializes to `y`, i.e.
-  `y` is in the closure of `x`.
-* `specialization_preorder` : specialization gives a preorder on a topological space.
 * `specialization_order` : specialization gives a partial order on a T0 space.
 * `is_generic_point` : `x` is the generic point of `S` if `S` is the closure of `x`.
 * `quasi_sober` : A space is quasi-sober if every irreducible closed subset has a generic point.
