@@ -335,7 +335,7 @@ See note [reducible non-instances]. -/
 @[reducible]
 protected def function.injective.division_ring [division_ring K] {K'}
   [has_zero K'] [has_mul K'] [has_add K'] [has_neg K'] [has_sub K'] [has_one K'] [has_inv K']
-  [has_div K'] [has_scalar ℕ K'] [has_scalar ℤ K'] [has_pow K' ℕ] [has_pow K' ℤ]
+  [has_div K'] [has_smul ℕ K'] [has_smul ℤ K'] [has_pow K' ℕ] [has_pow K' ℤ]
   (f : K' → K) (hf : function.injective f) (zero : f 0 = 0) (one : f 1 = 1)
   (add : ∀ x y, f (x + y) = f x + f y) (mul : ∀ x y, f (x * y) = f x * f y)
   (neg : ∀ x, f (-x) = -f x) (sub : ∀ x y, f (x - y) = f x - f y)
@@ -351,7 +351,7 @@ See note [reducible non-instances]. -/
 @[reducible]
 protected def function.injective.field [field K] {K'}
   [has_zero K'] [has_mul K'] [has_add K'] [has_neg K'] [has_sub K'] [has_one K'] [has_inv K']
-  [has_div K'] [has_scalar ℕ K'] [has_scalar ℤ K'] [has_pow K' ℕ] [has_pow K' ℤ]
+  [has_div K'] [has_smul ℕ K'] [has_smul ℤ K'] [has_pow K' ℕ] [has_pow K' ℤ]
   (f : K' → K) (hf : function.injective f) (zero : f 0 = 0) (one : f 1 = 1)
   (add : ∀ x y, f (x + y) = f x + f y) (mul : ∀ x y, f (x * y) = f x * f y)
   (neg : ∀ x, f (-x) = -f x) (sub : ∀ x y, f (x - y) = f x - f y)
