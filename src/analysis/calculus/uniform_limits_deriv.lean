@@ -22,79 +22,17 @@ _uniformly_. The formal statement appears as `has_fderiv_at_of_tendsto_uniformly
 
 ## Implementation notes
 
-Our proof utilizes three major components:
-  * `convex.norm_image_sub_le_of_norm_has_fderiv_within_le`: The mean value inequality for
-    vector-valued functions over `ℝ` and `ℂ`
-  * `norm_add_le`: The triangle inequality
-  * `uniform_cauchy_seq_on.tendsto_uniformly_on_of_tendsto` which allows us to upgrade pointwise
-    convergence to uniform convergence by showing that the Cauchy sequences converge uniformly to 0
+The primary components of the proof are the mean value theorem (in the guise of
+`convex.norm_image_sub_le_of_norm_has_fderiv_within_le`) and then various lemmas about manipulating
+uniform Cauchy sequences.
 
 ## Tags
 
 uniform convergence, limits of derivatives
 -/
 
-open finset filter metric
+open filter metric
 open_locale uniformity filter topological_space
-
-section uniform
-
-variables {α : Type*} {β : Type*} {ι : Type*} [uniform_space β]
-  {f f' : ι → α → β} {g g' : α → β} {l : filter ι} {x : α} {s : set α}
-
-lemma tendsto.tendsto_uniformly_on_const
-  {g : ι → β} {b : β} (hg : tendsto g l (𝓝 b)) (s : set α) :
-  tendsto_uniformly_on (λ n : ι, λ a : α, g n) (λ a : α, b) l s :=
-begin
-  by_cases hs : s = ∅,
-  { rw hs, exact tendsto_uniformly_on_of_empty, },
-  have hs : s.nonempty,
-  { by_contradiction H,
-    rw set.not_nonempty_iff_eq_empty at H,
-    exact hs H, },
-
-  intros u hu,
-  rw tendsto_iff_eventually at hg,
-  simp,
-  let p := (λ c, ∀ y : α, y ∈ s → (b, c) ∈ u),
-  have hhp : ∀ c, ( ∀ y : α, y ∈ s → (b, c) ∈ u) = p c,
-  { intros c, simp [p], },
-  have hhp' : ∀ c, ((b, c) ∈ u) = p c,
-  { cases hs with x hx,
-    intros c, simp [p],
-    exact ⟨λ h y hy, h, λ h, h x hx⟩, },
-  conv { congr, funext, rw [hhp (g n), ←hhp' (g n)], },
-  apply @hg (λ c, (b, c) ∈ u),
-  rw eventually_iff,
-  exact mem_nhds_left b hu,
-end
-
-lemma uniform_cauchy_seq_on.prod' {β' : Type*} [uniform_space β']
-  {f' : ι → α → β'} {s : set α}
-  (h : uniform_cauchy_seq_on f l s) (h' : uniform_cauchy_seq_on f' l s) :
-  uniform_cauchy_seq_on (λ (i : ι) a, (f i a, f' i a)) l s :=
-begin
-  intros u hu,
-  rw [uniformity_prod_eq_prod, filter.mem_map, mem_prod_iff] at hu,
-  obtain ⟨t, ht, t', ht', htt'⟩ := hu,
-  apply (filter.eventually_diag_of_eventually_prod ((h t ht).prod_mk (h' t' ht'))).mono,
-  intros x hx y hy,
-  cases hx with hxt hxt',
-  specialize hxt y hy,
-  specialize hxt' y hy,
-  simp only at hxt hxt' ⊢,
-  have := calc ((f x.fst y, f x.snd y), (f' x.fst y, f' x.snd y)) ∈ t ×ˢ t' : by simp [hxt, hxt']
-    ... ⊆ (λ (p : (β × β) × β' × β'), ((p.fst.fst, p.snd.fst), p.fst.snd, p.snd.snd)) ⁻¹' u : htt',
-  simpa using this,
-end
-
-section group
-variables [group β] [uniform_group β]
-
-
-end group
-
-end uniform
 
 section limits_of_derivatives
 
@@ -102,16 +40,14 @@ variables {E : Type*} [normed_group E] [normed_space ℝ E]
   {𝕜 : Type*} [is_R_or_C 𝕜] [normed_space 𝕜 E]
   {G : Type*} [normed_group G] [normed_space ℝ G] [normed_space 𝕜 G]
   {f : ℕ → E → G} {g : E → G} {f' : ℕ → (E → (E →L[𝕜] G))} {g' : E → (E →L[𝕜] G)}
-  {x y z : E} {r C : ℝ}
+  {s : set E} {y z : E} {C : ℝ}
 
 /-- A convenience theorem for utilizing the mean value theorem for differences of
 differentiable functions -/
-lemma mean_value_theorem_for_differences {f : E → G} {f' : E → (E →L[𝕜] G)}
-  {s : set E} (hs : convex ℝ s)
+lemma mean_value_theorem_for_differences {f : E → G} {f' : E → (E →L[𝕜] G)} (hs : convex ℝ s)
   (hf : ∀ (y : E), y ∈ s → has_fderiv_at f (f' y) y)
   (hg : ∀ (y : E), y ∈ s → has_fderiv_at g (g' y) y)
-  (hbound : ∀ (y : E), y ∈ s → ∥f' y - g' y∥ ≤ C)
-  (hy : y ∈ s) (hz : z ∈ s) :
+  (hbound : ∀ (y : E), y ∈ s → ∥f' y - g' y∥ ≤ C) (hy : y ∈ s) (hz : z ∈ s) :
   ∥y - z∥⁻¹ * ∥(f y - g y) - (f z - g z)∥ ≤ C :=
 begin
   -- Differences of differentiable functions are differentiable
@@ -150,8 +86,7 @@ end
 /-- If `f_n → g` pointwise and the derivatives `(f_n)' → h` _uniformly_ converge, then
 in fact for a fixed `y`, the difference quotients `∥z - y∥⁻¹ • (f_n z - f_n y)` converge
 _uniformly_ to `∥z - y∥⁻¹ • (g z - g y)` -/
-lemma difference_quotients_converge_uniformly
-  {s : set E} (hs : convex ℝ s)
+lemma difference_quotients_converge_uniformly (hs : convex ℝ s)
   (hf : ∀ (n : ℕ), ∀ (y : E), y ∈ s → has_fderiv_at (f n) (f' n y) y)
   (hfg : ∀ (y : E), y ∈ s → tendsto (λ n, f n y) at_top (𝓝 (g y)))
   (hfg' : tendsto_uniformly_on f' g' at_top s) :
@@ -194,7 +129,7 @@ begin
 end
 
 lemma foobar {ι : Type*}
-  {f : ι → E → G} {g : E → 𝕜} {s : set E} {l : filter ι} {C : ℝ}
+  {f : ι → E → G} {g : E → 𝕜} {l : filter ι}
   (hf : tendsto_uniformly_on f 0 l s) (hg : ∀ x : E, x ∈ s → ∥g x∥ ≤ C) :
   tendsto_uniformly_on (λ n : ι, λ z : E, (g z) • f n z) 0 l s :=
 begin
@@ -264,9 +199,44 @@ begin
   simp,
 end
 
+lemma normed_group.fooooo
+  {ι : Type*}
+  {f : ι → E → G} {g : E → G} {s : set E} {l : filter ι} :
+  tendsto_uniformly_on f g l s ↔ tendsto_uniformly_on (λ n, λ z, f n z - g z) 0 l s :=
+begin
+  sorry,
+  -- split,
+  -- intros hf u hu,
+  -- specialize hf u hu,
+  -- { intros hf u hu,
+  --   obtain ⟨ε, hε, H⟩ := uniformity_basis_dist.mem_uniformity_iff.mp hu,
+  --   have : {p : G × G | dist p.fst p.snd < ε} ∈ (𝓤 G),
+  --   { rw uniformity_basis_dist.mem_uniformity_iff,
+  --     use ε,
+  --     exact ⟨hε, by simp [H]⟩, },
+
+  --   refine (hf {p : G × G | dist p.fst p.snd < ε} this).mono (λ N h x hx, H _ _ _),
+  --   specialize h x hx,
+  --   simp at h,
+  --   rw dist_eq_norm at h,
+  --   simp [h], },
+
+  -- { intros hf u hu,
+  --   obtain ⟨ε, hε, H⟩ := uniformity_basis_dist.mem_uniformity_iff.mp hu,
+  --   have : {p : G × G | dist p.fst p.snd < ε} ∈ (𝓤 G),
+  --   { rw uniformity_basis_dist.mem_uniformity_iff,
+  --     use ε,
+  --     exact ⟨hε, by simp [H]⟩, },
+  --   refine (hf {p : G × G | dist p.fst p.snd < ε} this).mono (λ N h x hx, H _ _ _),
+  --   specialize h x hx,
+  --   simp only [set.mem_set_of_eq, dist_eq_norm] at h ⊢,
+  --   rw norm_sub_rev at h,
+  --   simpa using h, },
+end
+
 /-- (d/dx) lim_{n → ∞} f_n x = lim_{n → ∞} f'_n x on a closed ball when the f'_n
 converge _uniformly_ to their limit. -/
-lemma has_fderiv_at_of_tendsto_uniformly_on
+lemma has_fderiv_at_of_tendsto_uniformly_on {x : E} {r : ℝ}
   (hf : ∀ (n : ℕ), ∀ (y : E), y ∈ closed_ball x r → has_fderiv_at (f n) (f' n y) y)
   (hfg : ∀ (y : E), y ∈ closed_ball x r → tendsto (λ n, f n y) at_top (𝓝 (g y)))
   (hfg' : tendsto_uniformly_on f' g' at_top (closed_ball x r)) :
@@ -275,42 +245,33 @@ begin
   -- We do the famous "ε / 3 proof" which will involve several bouts of utilizing
   -- uniform continuity. First we setup our goal in terms of ε and δ
   intros y hy,
-  rw [has_fderiv_at_iff_tendsto, tendsto_nhds_nhds],
+  rw has_fderiv_at_iff_tendsto,
+  -- rw tendsto_iff_eventually,
+  -- intros p hp,
 
-  -- Now some important auxiliary facts such as:
   have hyc : y ∈ closed_ball x r,
   { exact (mem_ball.mp hy).le, },
 
   -- uniform convergence of the derivatives implies uniform convergence of the primal
-  have hfguc := uniform_convergence_of_uniform_convergence_derivatives hf hfg hfg',
+  have hfguc := uniform_convergence_of_uniform_convergence_derivatives bounded_closed_ball (convex_closed_ball x r) hf hfg hfg',
 
   -- convergence of the primal and uniform convergence of the derivatives implies
   -- uniform convergence of the difference quotients
   have hdiff := difference_quotients_converge_uniformly (convex_closed_ball x r) hf hfg hfg' y hyc,
 
   -- The first (ε / 3) comes from the convergence of the derivatives
-  intros ε hε,
-  have : 0 < (3 : ℝ)⁻¹, simp, linarith,
-  have ε_over_three_pos : 0 < (3⁻¹ * ε),
-  { exact mul_pos this hε.lt, },
-
-  rw tendsto_uniformly_on_iff at hfg',
-  specialize hfg' (3⁻¹ * ε) ε_over_three_pos.gt,
-  rw eventually_at_top at hfg',
-  rcases hfg' with ⟨N1, hN1⟩,
+  -- have hfg' := hfg'.uniform_cauchy_seq_on,
+  rw normed_group.fooooo at hfg',
 
   -- The second (ε / 3) comes from the uniform convergence of the difference quotients
-  rw tendsto_uniformly_on_iff at hdiff,
-  specialize hdiff (3⁻¹ * ε) ε_over_three_pos.gt,
-  rw eventually_at_top at hdiff,
-  rcases hdiff with ⟨N2, hN2⟩,
+  rw normed_group.fooooo at hdiff,
 
   -- These two N determine our final N
-  let N := max N1 N2,
+  let N := 10, -- max N1 N2,
 
   -- The final (ε / 3) comes from the definition of a derivative
   specialize hf N y hyc,
-  rw [has_fderiv_at_iff_tendsto, tendsto_nhds_nhds] at hf,
+  rw [has_fderiv_at_iff_tendsto] at hf, --, tendsto_nhds_nhds] at hf,
   specialize hf (3⁻¹ * ε) ε_over_three_pos.gt,
   rcases hf with ⟨δ', hδ', hf⟩,
 

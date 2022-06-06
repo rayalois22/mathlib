@@ -207,6 +207,33 @@ begin
   exact (λ h u hu, by simpa using eventually_iff.mp (h u hu)),
 end
 
+lemma filter.tendsto.tendsto_uniformly_on_const
+  {g : ι → β} {b : β} (hg : tendsto g p (𝓝 b)) (s : set α) :
+  tendsto_uniformly_on (λ n : ι, λ a : α, g n) (λ a : α, b) p s :=
+begin
+  by_cases hs : s = ∅,
+  { rw hs, exact tendsto_uniformly_on_of_empty, },
+  have hs : s.nonempty,
+  { by_contradiction H,
+    rw set.not_nonempty_iff_eq_empty at H,
+    exact hs H, },
+
+  intros u hu,
+  rw tendsto_iff_eventually at hg,
+  simp,
+  let p := (λ c, ∀ y : α, y ∈ s → (b, c) ∈ u),
+  have hhp : ∀ c, ( ∀ y : α, y ∈ s → (b, c) ∈ u) = p c,
+  { intros c, simp [p], },
+  have hhp' : ∀ c, ((b, c) ∈ u) = p c,
+  { cases hs with x hx,
+    intros c, simp [p],
+    exact ⟨λ h y hy, h, λ h, h x hx⟩, },
+  conv { congr, funext, rw [hhp (g n), ←hhp' (g n)], },
+  apply @hg (λ c, (b, c) ∈ u),
+  rw eventually_iff,
+  exact mem_nhds_left b hu,
+end
+
 lemma uniform_continuous_on.tendsto_uniformly [uniform_space α] [uniform_space γ]
   {x : α} {U : set α} (hU : U ∈ 𝓝 x)
   {F : α → β → γ} (hF : uniform_continuous_on ↿F (U ×ˢ (univ : set β))) :
@@ -294,6 +321,24 @@ lemma uniform_cauchy_seq_on.comp' [uniform_space γ] {g : β → γ} (hf : unifo
   (hg : uniform_continuous g) :
   uniform_cauchy_seq_on (λ n, g ∘ (F n)) p s :=
 λ u hu, hf _ (hg hu)
+
+lemma uniform_cauchy_seq_on.prod' {β' : Type*} [uniform_space β'] {F' : ι → α → β'}
+  (h : uniform_cauchy_seq_on F p s) (h' : uniform_cauchy_seq_on F' p s) :
+  uniform_cauchy_seq_on (λ (i : ι) a, (F i a, F' i a)) p s :=
+begin
+  intros u hu,
+  rw [uniformity_prod_eq_prod, filter.mem_map, mem_prod_iff] at hu,
+  obtain ⟨t, ht, t', ht', htt'⟩ := hu,
+  apply (filter.eventually_diag_of_eventually_prod ((h t ht).prod_mk (h' t' ht'))).mono,
+  intros x hx y hy,
+  cases hx with hxt hxt',
+  specialize hxt y hy,
+  specialize hxt' y hy,
+  simp only at hxt hxt' ⊢,
+  have := calc ((F x.fst y, F x.snd y), (F' x.fst y, F' x.snd y)) ∈ t ×ˢ t' : by simp [hxt, hxt']
+    ... ⊆ (λ (p : (β × β) × β' × β'), ((p.fst.fst, p.snd.fst), p.fst.snd, p.snd.snd)) ⁻¹' u : htt',
+  simpa using this,
+end
 
 section seq_tendsto
 

@@ -277,12 +277,12 @@ uniform_continuous_inv.comp_cauchy_seq h
 λ u hu, filter.eventually_diag_of_eventually_prod (((hf.prod hf').comp' uniform_continuous_div) u hu)
 
 @[to_additive] lemma uniform_cauchy_seq_on.mul {ι β : Type*} {l : filter ι} {f f' : ι → β → α}
-  {g g' : β → α} {s : set β} (hf : uniform_cauchy_seq_on f l s)
+  {s : set β} (hf : uniform_cauchy_seq_on f l s)
   (hf' : uniform_cauchy_seq_on f' l s) : uniform_cauchy_seq_on (f * f') l s :=
 λ u hu, by simpa using (((hf.prod' hf').comp' uniform_continuous_mul) u hu)
 
 @[to_additive] lemma uniform_cauchy_seq_on.div {ι β : Type*} {l : filter ι} {f f' : ι → β → α}
-  {g g' : β → α} {s : set β} (hf : uniform_cauchy_seq_on f l s)
+  {s : set β} (hf : uniform_cauchy_seq_on f l s)
   (hf' : uniform_cauchy_seq_on f' l s) : uniform_cauchy_seq_on (f / f') l s :=
 λ u hu, by simpa using (((hf.prod' hf').comp' uniform_continuous_div) u hu)
 
