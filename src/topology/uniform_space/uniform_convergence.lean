@@ -112,6 +112,15 @@ lemma tendsto_uniformly_on.mono {s' : set α}
   (h : tendsto_uniformly_on F f p s) (h' : s' ⊆ s) : tendsto_uniformly_on F f p s' :=
 λ u hu, (h u hu).mono (λ n hn x hx, hn x (h' hx))
 
+lemma tendsto_uniformly_on.congr_fun {F' : ι → α → β}
+  (hf : tendsto_uniformly_on F f p s) (hff' : ∀ᶠ n in p, set.eq_on (F n) (F' n) s) :
+  tendsto_uniformly_on F' f p s :=
+begin
+  refine (λ u hu, ((hf u hu).and hff').mono (λ n h x hx, _)),
+  rw ← h.right hx,
+  exact h.left x hx,
+end
+
 protected lemma tendsto_uniformly.tendsto_uniformly_on
   (h : tendsto_uniformly F f p) : tendsto_uniformly_on F f p s :=
 (tendsto_uniformly_on_univ.2 h).mono (subset_univ s)

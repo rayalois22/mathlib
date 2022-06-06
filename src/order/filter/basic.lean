@@ -1050,6 +1050,29 @@ theorem eventually_inf_principal {f : filter α} {p : α → Prop} {s : set α} 
   (∀ᶠ x in f ⊓ 𝓟 s, p x) ↔ ∀ᶠ x in f, x ∈ s → p x :=
 mem_inf_principal
 
+/-- A fact that is eventually true about all pairs `l ×ᶠ l` is eventually true about
+all diagonal pairs `(i, i)` -/
+lemma eventually_diag_of_eventually_prod {f : filter α} {p : α × α → Prop}
+  (h : ∀ᶠ i in (f.prod f), p i) : (∀ᶠ i in f, p (i, i)) :=
+begin
+  rw eventually_iff,
+  rw [eventually_iff, mem_prod_iff] at h,
+  obtain ⟨t, ht, s, hs, hst⟩ := h,
+  have ht_in_l : t ∩ s ∈ l, simp [hs, ht],
+  refine l.sets_of_superset ht_in_l _,
+  rw set.subset_def,
+  intros x hx,
+  have := calc (x, x) ∈ (t ∩ s) ×ˢ (t ∩ s) : by simpa using hx
+    ... ⊆ t ×ˢ s : begin
+      rw set.subset_def,
+      intros y hy,
+      simp at hy,
+      simp [hy],
+    end
+    ... ⊆ {x : ι × ι | p x} : hst,
+  simpa using this,
+end
+
 /-! ### Frequently -/
 
 /-- `f.frequently p` or `∃ᶠ x in f, p x` mean that `{x | ¬p x} ∉ f`. E.g., `∃ᶠ x in at_top, p x`

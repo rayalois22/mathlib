@@ -46,46 +46,28 @@ lemma tendsto.tendsto_uniformly_on_const
   {g : ι → β} {b : β} (hg : tendsto g l (𝓝 b)) (s : set α) :
   tendsto_uniformly_on (λ n : ι, λ a : α, g n) (λ a : α, b) l s :=
 begin
-  sorry,
-end
+  by_cases hs : s = ∅,
+  { rw hs, exact tendsto_uniformly_on_of_empty, },
+  have hs : s.nonempty,
+  { by_contradiction H,
+    rw set.not_nonempty_iff_eq_empty at H,
+    exact hs H, },
 
-lemma filter.eventually_diag_of_eventually_prod {p : ι × ι → Prop}
-  (h : ∀ᶠ i in (l ×ᶠ l), p i) : (∀ᶠ i in l, p (i, i)) :=
-begin
+  intros u hu,
+  rw tendsto_iff_eventually at hg,
+  simp,
+  let p := (λ c, ∀ y : α, y ∈ s → (b, c) ∈ u),
+  have hhp : ∀ c, ( ∀ y : α, y ∈ s → (b, c) ∈ u) = p c,
+  { intros c, simp [p], },
+  have hhp' : ∀ c, ((b, c) ∈ u) = p c,
+  { cases hs with x hx,
+    intros c, simp [p],
+    exact ⟨λ h y hy, h, λ h, h x hx⟩, },
+  conv { congr, funext, rw [hhp (g n), ←hhp' (g n)], },
+  apply @hg (λ c, (b, c) ∈ u),
   rw eventually_iff,
-  rw [eventually_iff, mem_prod_iff] at h,
-  obtain ⟨t, ht, s, hs, hst⟩ := h,
-  have ht_in_l : t ∩ s ∈ l, simp [hs, ht],
-  refine l.sets_of_superset ht_in_l _,
-  rw set.subset_def,
-  intros x hx,
-  have := calc (x, x) ∈ (t ∩ s) ×ˢ (t ∩ s) : by simpa using hx
-    ... ⊆ t ×ˢ s : begin
-      rw set.subset_def,
-      intros y hy,
-      simp at hy,
-      simp [hy],
-    end
-    ... ⊆ {x : ι × ι | p x} : hst,
-  simpa using this,
+  exact mem_nhds_left b hu,
 end
-
-section add_group
-variables [add_group β] [uniform_add_group β]
-
-lemma tendsto_uniformly_on.add
-  (hf : tendsto_uniformly_on f g l s)
-  (hf' : tendsto_uniformly_on f' g' l s) :
-  tendsto_uniformly_on (f + f') (g + g') l s :=
-λ u hu, silly (((hf.prod hf').comp' uniform_continuous_add) u hu)
-
-lemma tendsto_uniformly_on.sub
-  (hf : tendsto_uniformly_on f g l s)
-  (hf' : tendsto_uniformly_on f' g' l s) :
-  tendsto_uniformly_on (f - f') (g - g') l s :=
-λ u hu, silly (((hf.prod hf').comp' uniform_continuous_sub) u hu)
-
-end add_group
 
 lemma uniform_cauchy_seq_on.prod' {β' : Type*} [uniform_space β']
   {f' : ι → α → β'} {s : set α}
@@ -95,85 +77,22 @@ begin
   intros u hu,
   rw [uniformity_prod_eq_prod, filter.mem_map, mem_prod_iff] at hu,
   obtain ⟨t, ht, t', ht', htt'⟩ := hu,
-  apply (silly ((h t ht).prod_mk (h' t' ht'))).mono,
+  apply (filter.eventually_diag_of_eventually_prod ((h t ht).prod_mk (h' t' ht'))).mono,
   intros x hx y hy,
   cases hx with hxt hxt',
   specialize hxt y hy,
   specialize hxt' y hy,
-  simp only at hxt hxt',
-  simp only,
+  simp only at hxt hxt' ⊢,
   have := calc ((f x.fst y, f x.snd y), (f' x.fst y, f' x.snd y)) ∈ t ×ˢ t' : by simp [hxt, hxt']
     ... ⊆ (λ (p : (β × β) × β' × β'), ((p.fst.fst, p.snd.fst), p.fst.snd, p.snd.snd)) ⁻¹' u : htt',
   simpa using this,
 end
 
-section add_group
-variables [add_group β] [uniform_add_group β]
+section group
+variables [group β] [uniform_group β]
 
-lemma uniform_cauchy_seq_on.add
-  (hf : uniform_cauchy_seq_on f l s) (hf' : uniform_cauchy_seq_on f' l s) :
-  uniform_cauchy_seq_on (f + f') l s :=
-λ u hu, by simpa using (((hf.prod' hf').comp' uniform_continuous_add) u hu)
 
-lemma uniform_cauchy_seq_on.sub
-  (hf : uniform_cauchy_seq_on f l s) (hf' : uniform_cauchy_seq_on f' l s) :
-  uniform_cauchy_seq_on (f - f') l s :=
-λ u hu, by simpa using (((hf.prod' hf').comp' uniform_continuous_sub) u hu)
-
-end add_group
-
-lemma foo {α 𝕜 β : Type*} [normed_group β] [normed_space ℝ β]
-  {f : ℕ → α → β} {s : set α} {l : filter ℕ}
-  (hf : tendsto_uniformly_on (λ n : (ℕ × ℕ), λ z : α, f n.fst z - f n.snd z) 0 at_top s) :
-  uniform_cauchy_seq_on f at_top s :=
-begin
-  rw metric.uniform_cauchy_seq_on_iff,
-  rw metric.tendsto_uniformly_on_iff at hf,
-  intros ε hε,
-  specialize hf ε hε,
-  rw eventually_at_top at hf,
-  cases hf with a ha,
-  use max a.fst a.snd,
-  intros m hm n hn x hx,
-  have : (m, n) ≥ a, sorry,
-  specialize ha (m, n) this x hx,
-  simp at ha,
-  rw dist_eq_norm,
-  exact ha,
-end
-
-lemma foobar {α β 𝕜 ι: Type*} [normed_group β] [normed_field 𝕜] [normed_space 𝕜 β]
-  {f : ι → α → β} {g : α → 𝕜} {s : set α} {l : filter ι} {C : ℝ}
-  (hf : tendsto_uniformly_on f 0 l s) (hg : ∀ x : α, x ∈ s → ∥g x∥ ≤ C) :
-  tendsto_uniformly_on (λ n : ι, λ z : α, (g z) • f n z) 0 l s :=
-begin
-  rw metric.tendsto_uniformly_on_iff at hf ⊢,
-  intros ε hε,
-
-  -- C must be nonnegative
-  by_cases hC : C < 0,
-  { refine (hf ε hε).mono (λ i h x hx, _),
-    exfalso,
-    linarith [hC, calc 0 ≤ ∥g x∥ : by simp ... ≤ C : hg x hx], },
-  push_neg at hC,
-
-  cases lt_or_eq_of_le hC,
-  swap,
-  { -- The case C = 0 is trivial
-    apply eventually_of_forall,
-    intros i x hx,
-    specialize hg x hx,
-    simp [h.symm] at hg,
-    simp [hg, hε.lt], },
-
-  -- The case with C positive is where the work is
-  apply (hf (C⁻¹ * ε) ((mul_pos (inv_pos.mpr h) hε.lt).gt)).mono,
-  intros i hf' x hx,
-  have := mul_lt_mul' (hg x hx) (hf' x hx) (by simp) h,
-  rw [mul_inv_cancel_left₀ h.ne.symm] at this,
-  rw [pi.zero_apply, dist_zero_left, norm_smul],
-  simpa using this,
-end
+end group
 
 end uniform
 
@@ -181,7 +100,7 @@ section limits_of_derivatives
 
 variables {E : Type*} [normed_group E] [normed_space ℝ E]
   {𝕜 : Type*} [is_R_or_C 𝕜] [normed_space 𝕜 E]
-  {G : Type*} [normed_group G] [normed_space 𝕜 G]
+  {G : Type*} [normed_group G] [normed_space ℝ G] [normed_space 𝕜 G]
   {f : ℕ → E → G} {g : E → G} {f' : ℕ → (E → (E →L[𝕜] G))} {g' : E → (E →L[𝕜] G)}
   {x y z : E} {r C : ℝ}
 
@@ -274,6 +193,28 @@ begin
   exact half_lt_self hε.lt,
 end
 
+lemma foobar {ι : Type*}
+  {f : ι → E → G} {g : E → 𝕜} {s : set E} {l : filter ι} {C : ℝ}
+  (hf : tendsto_uniformly_on f 0 l s) (hg : ∀ x : E, x ∈ s → ∥g x∥ ≤ C) :
+  tendsto_uniformly_on (λ n : ι, λ z : E, (g z) • f n z) 0 l s :=
+begin
+  rw metric.tendsto_uniformly_on_iff at hf ⊢,
+  intros ε hε,
+
+  -- We can assume that C is positive
+  let C' := max C 1,
+  have hg' : ∀ x : E, x ∈ s → ∥g x∥ ≤ C',
+  { exact (λ x hx, le_trans (hg x hx) (by simp)), },
+  have hC : 0 < C', simp [C'],
+
+  apply (hf (C'⁻¹ * ε) ((mul_pos (inv_pos.mpr hC) hε.lt).gt)).mono,
+  intros i hf' x hx,
+  have := mul_lt_mul' (hg' x hx) (hf' x hx) (by simp) hC,
+  rw [mul_inv_cancel_left₀ hC.ne.symm] at this,
+  rw [pi.zero_apply, dist_zero_left, norm_smul],
+  simpa using this,
+end
+
 lemma uniform_convergence_of_uniform_convergence_derivatives
   {s : set E} (hs : bounded s) (hsc : convex ℝ s)
   (hf : ∀ (n : ℕ), ∀ (y : E), y ∈ s → has_fderiv_at (f n) (f' n y) y)
@@ -281,11 +222,6 @@ lemma uniform_convergence_of_uniform_convergence_derivatives
   (hfg' : tendsto_uniformly_on f' g' at_top s) :
   tendsto_uniformly_on f g at_top s :=
 begin
-  -- Proof strategy: We have assumed that f → g pointwise, so it suffices to show that
-  -- `f` is a *uniform* cauchy sequence on `s`. But for any `y`, we have
-  -- `|f m y - f n y| ≤ |(f m - f n) y - (f m - f n) x| + |f m x - f n x|` by
-  -- the triangle inequality and "adding zero". Here `x` is fixed
-
   -- The case s is empty is trivial. Elimintate it and extract a base point `x`
   by_cases hs' : ¬s.nonempty,
   { rw set.not_nonempty_iff_eq_empty at hs',
@@ -294,13 +230,14 @@ begin
   push_neg at hs',
   cases hs' with x hx,
 
-  -- Get a _positive_ bound on the diameter of s
-  cases hs with C' hC',
-  let C := max C' 1,
-  have hCpos : 0 < C, calc (0 : ℝ) < 1 : by simp ... ≤ max C' 1 : by simp,
-  have hC : ∀ (x : E), x ∈ s → ∀ (y : E), y ∈ s → dist x y ≤ C,
-  { intros x hx y hy,
-    calc dist x y ≤ C' : hC' x hx y hy ... ≤ C : by simp [C], },
+  -- Get a bound on s and get it into the format we need it in
+  cases hs with C hC,
+  specialize hC x hx,
+  have hC : ∀ (y : E), y ∈ s → ∥(λ y, ∥y - x∥) y∥ ≤ C,
+  { intros y hy,
+    specialize hC y hy,
+    rw [dist_comm, dist_eq_norm, ←norm_norm] at hC,
+    exact hC, },
 
   -- Study (λ n y, f n y - f n x) instead of f
   refine uniform_cauchy_seq_on.tendsto_uniformly_on_of_tendsto _ hfg,
@@ -309,37 +246,22 @@ begin
   rw this,
   have := (tendsto.tendsto_uniformly_on_const (hfg x hx) s).uniform_cauchy_seq_on,
   refine uniform_cauchy_seq_on.add _ this,
-  rw normed_group.uniform_cauchy_seq_on_iff_tendsto_uniformly_on_zero,
-  rw normed_group.tendsto_uniformly_on_zero,
-  intros ε hε,
-  have := tendsto_uniformly_on.uniform_cauchy_seq_on hfg',
+
+  -- We'll use the lemma we already prove and multiply it by a uniform constant
+  have := (difference_quotients_converge_uniformly hsc hf hfg hfg' x hx).uniform_cauchy_seq_on,
   rw normed_group.uniform_cauchy_seq_on_iff_tendsto_uniformly_on_zero at this,
-  rw normed_group.tendsto_uniformly_on_zero at this,
+  have := foobar this hC,
+  rw normed_group.uniform_cauchy_seq_on_iff_tendsto_uniformly_on_zero,
+  refine this.congr_fun (λ n y hy, _),
+  simp only,
+  rw [←smul_sub, ←smul_assoc],
+  norm_cast,
 
-  have ε_over_two_pos : 0 < C⁻¹ * (2⁻¹ * ε),
-  { exact mul_pos (inv_pos.mpr hCpos) (mul_pos (by simp) hε.lt), },
-
-  refine ((this (C⁻¹ * (2⁻¹ * ε)) ε_over_two_pos.gt).mono (λ N h y hy, (h y hy).le)).mono _,
-  intros N h y hy,
-
-  -- We need to rule out the case when x = y, where the result is trivial
-  by_cases hxy : x = y, simp [hxy, hε.lt],
-  have hxy' : ∥y - x∥ ≠ 0, {simp, intros h, rw sub_eq_zero at h, exact hxy h.symm, },
-
-  -- With this in hand, we can apply the mean value theorem and our final manipulations
-  have mvt := mean_value_theorem_for_differences hsc (hf N.fst) (hf N.snd) h hy hx,
-  simp_rw dist_eq_norm at hC,
-  have := mul_le_mul (hC y hy x hx) mvt (mul_nonneg (by simp) (by simp)) hCpos.le,
-  rw mul_inv_cancel_left₀ hxy' at this,
-  rw mul_inv_cancel_left₀ (ne_of_lt hCpos).symm at this,
-  have haaa : ∀ a b c d : G, a - b - (c - d) = a - c - (b - d),
-  { intros a b c d,
-    rw [←sub_add, ←sub_add, sub_sub, sub_sub],
-    conv { congr, congr, congr, skip, rw add_comm, }, },
-  conv { congr, funext, rw haaa, },
-  refine lt_of_le_of_lt this _,
-  rw ←div_eq_inv_mul,
-  exact half_lt_self hε.lt,
+  -- The trivial case must be eliminated to allow for cancellation
+  by_cases h : y = x,
+  { simp [h], },
+  rw mul_inv_cancel (λ h', h (sub_eq_zero.mp (norm_eq_zero.mp h'))),
+  simp,
 end
 
 /-- (d/dx) lim_{n → ∞} f_n x = lim_{n → ∞} f'_n x on a closed ball when the f'_n
