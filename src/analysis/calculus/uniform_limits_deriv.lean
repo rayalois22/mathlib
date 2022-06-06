@@ -42,31 +42,19 @@ section uniform
 variables {α : Type*} {β : Type*} {ι : Type*} [uniform_space β]
   {f f' : ι → α → β} {g g' : α → β} {l : filter ι} {x : α} {s : set α}
 
-lemma tendsto_uniformly_on_singleton_iff_tendsto :
-  tendsto_uniformly_on f g l {x} ↔ tendsto (λ n : ι, f n x) l (𝓝 (g x)) :=
+lemma tendsto.tendsto_uniformly_on_const
+  {g : ι → β} {b : β} (hg : tendsto g l (𝓝 b)) (s : set α) :
+  tendsto_uniformly_on (λ n : ι, λ a : α, g n) (λ a : α, b) l s :=
 begin
-  rw uniform.tendsto_nhds_right,
-  unfold tendsto,
-  rw filter.le_def,
-  simp_rw filter.mem_map',
-
-  split,
-  exact (λ h u hu, by simpa using eventually_iff.mp (h u hu)),
-  exact (λ h u hu, by simpa using eventually_iff.mp (h u hu)),
+  sorry,
 end
 
-lemma tendsto_uniformly_on_of_empty :
-  tendsto_uniformly_on f g l ∅ :=
-λ u hu, by simp
-
-lemma silly {p : ι × ι → Prop} :
-  (∀ᶠ i in (l ×ᶠ l), p i) → (∀ᶠ i in l, p (i, i)) :=
+lemma filter.eventually_diag_of_eventually_prod {p : ι × ι → Prop}
+  (h : ∀ᶠ i in (l ×ᶠ l), p i) : (∀ᶠ i in l, p (i, i)) :=
 begin
-  intros h,
   rw eventually_iff,
-  rw eventually_iff at h,
-  rw mem_prod_iff at h,
-  rcases h with ⟨t, ht, s, hs, hst⟩,
+  rw [eventually_iff, mem_prod_iff] at h,
+  obtain ⟨t, ht, s, hs, hst⟩ := h,
   have ht_in_l : t ∩ s ∈ l, simp [hs, ht],
   refine l.sets_of_superset ht_in_l _,
   rw set.subset_def,
@@ -99,48 +87,21 @@ lemma tendsto_uniformly_on.sub
 
 end add_group
 
-lemma uniform_cauchy_seq_on.mono {s' : set α}
-  (hf : uniform_cauchy_seq_on f l s) (hss' : s' ⊆ s) :
-  uniform_cauchy_seq_on f l s' :=
-λ u hu, (hf u hu).mono (λ x hx y hy, hx y (hss' hy))
-
-/-- Composing on the right by a function preserves uniform convergence -/
-lemma uniform_cauchy_seq_on.comp
-  {γ : Type*}
-  (hf : uniform_cauchy_seq_on f l s)
-  (g : γ → α) :
-  uniform_cauchy_seq_on (λ n, f n ∘ g) l (g ⁻¹' s) :=
-λ u hu, (hf u hu).mono (λ x hx y hy, hx (g y) hy)
-
-/-- Composing on the left by a uniformly continuous function preserves
-uniform convergence -/
-lemma uniform_cauchy_seq_on.comp'
-  {γ : Type*} [uniform_space γ]
-  (hf : uniform_cauchy_seq_on f l s)
-  {g : β → γ} (hg : uniform_continuous g) :
-  uniform_cauchy_seq_on (λ n, g ∘ (f n)) l s :=
-λ u hu, hf _ (hg hu)
-
 lemma uniform_cauchy_seq_on.prod' {β' : Type*} [uniform_space β']
   {f' : ι → α → β'} {s : set α}
   (h : uniform_cauchy_seq_on f l s) (h' : uniform_cauchy_seq_on f' l s) :
   uniform_cauchy_seq_on (λ (i : ι) a, (f i a, f' i a)) l s :=
 begin
   intros u hu,
-  rw uniformity_prod_eq_prod at hu,
-  rw filter.mem_map at hu,
-  rw mem_prod_iff at hu,
+  rw [uniformity_prod_eq_prod, filter.mem_map, mem_prod_iff] at hu,
   obtain ⟨t, ht, t', ht', htt'⟩ := hu,
-  specialize h t ht,
-  specialize h' t' ht',
-  have := silly (h.prod_mk h'),
-  apply this.mono,
+  apply (silly ((h t ht).prod_mk (h' t' ht'))).mono,
   intros x hx y hy,
   cases hx with hxt hxt',
   specialize hxt y hy,
   specialize hxt' y hy,
-  simp at hxt hxt',
-  simp [hxt, hxt', htt'],
+  simp only at hxt hxt',
+  simp only,
   have := calc ((f x.fst y, f x.snd y), (f' x.fst y, f' x.snd y)) ∈ t ×ˢ t' : by simp [hxt, hxt']
     ... ⊆ (λ (p : (β × β) × β' × β'), ((p.fst.fst, p.snd.fst), p.fst.snd, p.snd.snd)) ⁻¹' u : htt',
   simpa using this,
@@ -160,6 +121,60 @@ lemma uniform_cauchy_seq_on.sub
 λ u hu, by simpa using (((hf.prod' hf').comp' uniform_continuous_sub) u hu)
 
 end add_group
+
+lemma foo {α 𝕜 β : Type*} [normed_group β] [normed_space ℝ β]
+  {f : ℕ → α → β} {s : set α} {l : filter ℕ}
+  (hf : tendsto_uniformly_on (λ n : (ℕ × ℕ), λ z : α, f n.fst z - f n.snd z) 0 at_top s) :
+  uniform_cauchy_seq_on f at_top s :=
+begin
+  rw metric.uniform_cauchy_seq_on_iff,
+  rw metric.tendsto_uniformly_on_iff at hf,
+  intros ε hε,
+  specialize hf ε hε,
+  rw eventually_at_top at hf,
+  cases hf with a ha,
+  use max a.fst a.snd,
+  intros m hm n hn x hx,
+  have : (m, n) ≥ a, sorry,
+  specialize ha (m, n) this x hx,
+  simp at ha,
+  rw dist_eq_norm,
+  exact ha,
+end
+
+lemma foobar {α β 𝕜 ι: Type*} [normed_group β] [normed_field 𝕜] [normed_space 𝕜 β]
+  {f : ι → α → β} {g : α → 𝕜} {s : set α} {l : filter ι} {C : ℝ}
+  (hf : tendsto_uniformly_on f 0 l s) (hg : ∀ x : α, x ∈ s → ∥g x∥ ≤ C) :
+  tendsto_uniformly_on (λ n : ι, λ z : α, (g z) • f n z) 0 l s :=
+begin
+  rw metric.tendsto_uniformly_on_iff at hf ⊢,
+  intros ε hε,
+
+  -- C must be nonnegative
+  by_cases hC : C < 0,
+  { refine (hf ε hε).mono (λ i h x hx, _),
+    exfalso,
+    linarith [hC, calc 0 ≤ ∥g x∥ : by simp ... ≤ C : hg x hx], },
+  push_neg at hC,
+
+  cases lt_or_eq_of_le hC,
+  swap,
+  { -- The case C = 0 is trivial
+    apply eventually_of_forall,
+    intros i x hx,
+    specialize hg x hx,
+    simp [h.symm] at hg,
+    simp [hg, hε.lt], },
+
+  -- The case with C positive is where the work is
+  apply (hf (C⁻¹ * ε) ((mul_pos (inv_pos.mpr h) hε.lt).gt)).mono,
+  intros i hf' x hx,
+  have := mul_lt_mul' (hg x hx) (hf' x hx) (by simp) h,
+  rw [mul_inv_cancel_left₀ h.ne.symm] at this,
+  rw [pi.zero_apply, dist_zero_left, norm_smul],
+  simpa using this,
+end
+
 end uniform
 
 section limits_of_derivatives
@@ -180,9 +195,6 @@ lemma mean_value_theorem_for_differences {f : E → G} {f' : E → (E →L[𝕜]
   (hy : y ∈ s) (hz : z ∈ s) :
   ∥y - z∥⁻¹ * ∥(f y - g y) - (f z - g z)∥ ≤ C :=
 begin
-  -- Differences of differentiable functions are differentiable and closed balls are
-  -- convex, so a bit of annoying symbol pushing will get us the actual theorem
-
   -- Differences of differentiable functions are differentiable
   have hderiv : ∀ (y : E), y ∈ s →
     has_fderiv_within_at (f - g) ((f' - g') y) s y,
@@ -229,146 +241,105 @@ lemma difference_quotients_converge_uniformly
       (λ n : ℕ, λ z : E, (∥z - y∥⁻¹ : 𝕜) • ((f n z) - (f n y)))
       (λ z : E, (∥z - y∥⁻¹ : 𝕜) • ((g z) - (g y))) at_top s :=
 begin
-  -- Proof strategy: Rewrite the Cauchy sequence of difference quotients as
-  -- a difference quotient. Then apply the mean value theorem and the uniform
-  -- convergence of the difference of derivatives
+  -- Rewrite the Cauchy sequence as a difference quotient of the difference of functions
   intros y hy,
   refine uniform_cauchy_seq_on.tendsto_uniformly_on_of_tendsto _
     (λ z hz, ((hfg z hz).sub (hfg y hy)).const_smul _),
-  rw uniform_cauchy_seq_on_iff,
-  intros ε hε,
-  have := hfg'.uniform_cauchy_seq_on,
-  rw metric.uniform_cauchy_seq_on_iff at this,
-  have half_eps_ge_zero : 2⁻¹ * ε > 0, { simp [hε.lt], },
-  have half_eps_lt_eps : 2⁻¹ * ε < ε,
-  { -- This seems like it should be golfable?
-    have := half_lt_self hε.lt,
-    ring_nf at this,
-    ring_nf,
-    exact this, },
-  rcases (this (2⁻¹ * ε) half_eps_ge_zero) with ⟨N, hN⟩,
-  use N,
-  intros m hm n hn z hz,
-  specialize hN m hm n hn,
-  have : ∀ (x_1 : E), x_1 ∈ s → ∥f' m x_1 - f' n x_1∥ ≤ 2⁻¹ * ε,
-  { intros y hy,
-    rw ←dist_eq_norm,
-    exact (hN y hy).le, },
-  have mvt := mean_value_theorem_for_differences hs (hf m) (hf n) this hz hy,
-
-  rw [dist_eq_norm, ←smul_sub, norm_smul, norm_inv, is_R_or_C.norm_coe_norm],
-  -- This would work with `ring` but this is no longer a `ring`. Is there a
-  -- `comm_group` equivalent of `ring`?
-  have : f m z - f m y - (f n z - f n y) = f m z - f n z - (f m y - f n y),
-  { rw [←sub_add, ←sub_add, sub_sub, sub_sub],
+  simp_rw [normed_group.uniform_cauchy_seq_on_iff_tendsto_uniformly_on_zero, ←smul_sub],
+  have : ∀ a b c d : G, a - b - (c - d) = a - c - (b - d),
+  { intros a b c d,
+    rw [←sub_add, ←sub_add, sub_sub, sub_sub],
     conv { congr, congr, congr, skip, rw add_comm, }, },
-  rw this,
-  exact lt_of_le_of_lt mvt half_eps_lt_eps,
-end
+  conv { congr, funext, rw this, },
 
-lemma uniform_convergence_of_uniform_convergence_derivatives
-  (hf : ∀ (n : ℕ), ∀ (y : E), y ∈ closed_ball x r → has_fderiv_at (f n) (f' n y) y)
-  (hfg : ∀ (y : E), y ∈ closed_ball x r → tendsto (λ n, f n y) at_top (𝓝 (g y)))
-  (hfg' : tendsto_uniformly_on f' g' at_top (closed_ball x r)) :
-  tendsto_uniformly_on f g at_top (closed_ball x r) :=
-begin
-  -- Proof strategy: We have assumed that f → g pointwise, so it suffices to show that
-  -- `f` is a *uniform* cauchy sequence on `closed_ball x r`. But for any `y`, we have
-  -- `|f m y - f n y| ≤ |(f m - f n) y - (f m - f n) x| + |f m x - f n x|` by
-  -- the triangle inequality and "adding zero". Importantly, note that `x` is fixed.
-  --
-  -- The first of these summands can be bounded using the fact that the difference
-  -- quotients converge uniformly. The latter follows from the fact that `λ n, f n x` is
-  -- a (not-necessarily uniform) cauchy sequence.
-
-  -- Trivial cases first: empty and singleton
-  cases (le_or_lt r 0) with hr,
-  cases lt_or_eq_of_le hr with hr',
-  { have : closed_ball x r = ∅, simp [hr'],
-    rw this,
-    exact tendsto_uniformly_on_of_empty, },
-  { simp [h, tendsto_uniformly_on_singleton_iff_tendsto.mpr (hfg x (by simp [h]))], },
-
-  -- Start of the main case
-  refine uniform_cauchy_seq_on.tendsto_uniformly_on_of_tendsto _ hfg,
-  rw metric.uniform_cauchy_seq_on_iff,
+  -- We'll show this difference quotient is uniformly arbitrarily small
+  rw normed_group.tendsto_uniformly_on_zero,
   intros ε hε,
 
-  -- Get the bound for |f m x - f n x|
-  have := metric.cauchy_seq_iff.mp (hfg x (by simp [h.le])).cauchy_seq,
+  -- The uniform convergence of the derivatives allows us to invoke the mean value theorem
+  have := tendsto_uniformly_on.uniform_cauchy_seq_on hfg',
+  rw [normed_group.uniform_cauchy_seq_on_iff_tendsto_uniformly_on_zero, normed_group.tendsto_uniformly_on_zero] at this,
+
   have two_inv_pos : 0 < (2 : ℝ)⁻¹, simp,
   have ε_over_two_pos : 0 < (2⁻¹ * ε),
   { exact mul_pos two_inv_pos hε.lt, },
-  cases this (2⁻¹ * ε) ε_over_two_pos.gt with N1 hN1,
 
-  -- The mean value theorem will let us |(f m - f n) y - (f m - f n) x| up to a factor
-  -- of diam closed_ball x r = 2 * r. Choose N2 with this in mind
-  have foo := metric.uniform_cauchy_seq_on_iff.mp hfg'.uniform_cauchy_seq_on,
-  have : 0 < (2⁻¹ * r⁻¹ * ε),
-  { exact mul_pos (mul_pos (by norm_num) (by simp [h])) hε.lt, },
-  specialize foo (2⁻¹ * r⁻¹ * ε) this.gt,
-  cases foo with N2 hN2,
+  refine ((this (2⁻¹ * ε) ε_over_two_pos.gt).mono (λ N h y hy, (h y hy).le)).mono _,
+  intros N h z hz,
 
-  -- Some annoying manipulation
-  let N := max N1 N2,
-  refine ⟨N, λ m hm n hn y hy, _⟩,
-  rw dist_eq_norm,
+  have mvt := mean_value_theorem_for_differences hs (hf N.fst) (hf N.snd) h hz hy,
+  rw [norm_smul, norm_inv, is_R_or_C.norm_coe_norm],
+  refine lt_of_le_of_lt mvt _,
+  rw ←div_eq_inv_mul,
+  exact half_lt_self hε.lt,
+end
 
-  -- Apply the triangle inequality
-  have : f m y - f n y = (f m y - f n y) - (f m x - f n x) + (f m x - f n x),
-  { rw sub_add_cancel, },
+lemma uniform_convergence_of_uniform_convergence_derivatives
+  {s : set E} (hs : bounded s) (hsc : convex ℝ s)
+  (hf : ∀ (n : ℕ), ∀ (y : E), y ∈ s → has_fderiv_at (f n) (f' n y) y)
+  (hfg : ∀ (y : E), y ∈ s → tendsto (λ n, f n y) at_top (𝓝 (g y)))
+  (hfg' : tendsto_uniformly_on f' g' at_top s) :
+  tendsto_uniformly_on f g at_top s :=
+begin
+  -- Proof strategy: We have assumed that f → g pointwise, so it suffices to show that
+  -- `f` is a *uniform* cauchy sequence on `s`. But for any `y`, we have
+  -- `|f m y - f n y| ≤ |(f m - f n) y - (f m - f n) x| + |f m x - f n x|` by
+  -- the triangle inequality and "adding zero". Here `x` is fixed
+
+  -- The case s is empty is trivial. Elimintate it and extract a base point `x`
+  by_cases hs' : ¬s.nonempty,
+  { rw set.not_nonempty_iff_eq_empty at hs',
+    rw hs',
+    exact tendsto_uniformly_on_of_empty, },
+  push_neg at hs',
+  cases hs' with x hx,
+
+  -- Get a _positive_ bound on the diameter of s
+  cases hs with C' hC',
+  let C := max C' 1,
+  have hCpos : 0 < C, calc (0 : ℝ) < 1 : by simp ... ≤ max C' 1 : by simp,
+  have hC : ∀ (x : E), x ∈ s → ∀ (y : E), y ∈ s → dist x y ≤ C,
+  { intros x hx y hy,
+    calc dist x y ≤ C' : hC' x hx y hy ... ≤ C : by simp [C], },
+
+  -- Study (λ n y, f n y - f n x) instead of f
+  refine uniform_cauchy_seq_on.tendsto_uniformly_on_of_tendsto _ hfg,
+  have : f = (λ n : ℕ, λ y : E, f n y - f n x) + (λ n : ℕ, λ y : E, f n x),
+  { ext, simp, },
   rw this,
-  have : ∥f m y - f n y - (f m x - f n x) + (f m x - f n x)∥ ≤
-    ∥f m y - f n y - (f m x - f n x)∥ + ∥f m x - f n x∥,
-  { exact norm_add_le _ _, },
+  have := (tendsto.tendsto_uniformly_on_const (hfg x hx) s).uniform_cauchy_seq_on,
+  refine uniform_cauchy_seq_on.add _ this,
+  rw normed_group.uniform_cauchy_seq_on_iff_tendsto_uniformly_on_zero,
+  rw normed_group.tendsto_uniformly_on_zero,
+  intros ε hε,
+  have := tendsto_uniformly_on.uniform_cauchy_seq_on hfg',
+  rw normed_group.uniform_cauchy_seq_on_iff_tendsto_uniformly_on_zero at this,
+  rw normed_group.tendsto_uniformly_on_zero at this,
+
+  have ε_over_two_pos : 0 < C⁻¹ * (2⁻¹ * ε),
+  { exact mul_pos (inv_pos.mpr hCpos) (mul_pos (by simp) hε.lt), },
+
+  refine ((this (C⁻¹ * (2⁻¹ * ε)) ε_over_two_pos.gt).mono (λ N h y hy, (h y hy).le)).mono _,
+  intros N h y hy,
+
+  -- We need to rule out the case when x = y, where the result is trivial
+  by_cases hxy : x = y, simp [hxy, hε.lt],
+  have hxy' : ∥y - x∥ ≠ 0, {simp, intros h, rw sub_eq_zero at h, exact hxy h.symm, },
+
+  -- With this in hand, we can apply the mean value theorem and our final manipulations
+  have mvt := mean_value_theorem_for_differences hsc (hf N.fst) (hf N.snd) h hy hx,
+  simp_rw dist_eq_norm at hC,
+  have := mul_le_mul (hC y hy x hx) mvt (mul_nonneg (by simp) (by simp)) hCpos.le,
+  rw mul_inv_cancel_left₀ hxy' at this,
+  rw mul_inv_cancel_left₀ (ne_of_lt hCpos).symm at this,
+  have haaa : ∀ a b c d : G, a - b - (c - d) = a - c - (b - d),
+  { intros a b c d,
+    rw [←sub_add, ←sub_add, sub_sub, sub_sub],
+    conv { congr, congr, congr, skip, rw add_comm, }, },
+  conv { congr, funext, rw haaa, },
   refine lt_of_le_of_lt this _,
-
-  -- The case y = x is trivial and causes some divide by zero errors throughout the
-  -- proof, so we just take care of it now
-  by_cases hyxx : y = x,
-  { simp [hyxx],
-    rw ←dist_eq_norm,
-    have := hN1 m
-      (le_trans (le_max_left N1 N2) hm.le) n (le_trans (le_max_left N1 N2) hn.le),
-    transitivity,
-    exact this,
-    rw mul_lt_iff_lt_one_left hε.lt,
-    norm_num, },
-
-  -- Conveniences that the ring solver can't figure out on its own
-  have hxyy : y - x ≠ 0, exact λ H, hyxx (sub_eq_zero.mp H),
-  have hxyy' : ∥y - x∥ ≠ 0, simp [hxyy],
-
-  -- Multiply and divide by the difference quotient denominator
-  have : ∥f m y - f n y - (f m x - f n x)∥ =
-    ∥y - x∥ * (∥y - x∥⁻¹ * ∥f m y - f n y - (f m x - f n x)∥),
-  { exact (mul_inv_cancel_left₀ hxyy' _).symm, },
-  rw this,
-
-  specialize hN2 m (ge_trans hm (by simp)) n (ge_trans hn (by simp)),
-  have : ∀ (x_1 : E), x_1 ∈ closed_ball x r → ∥ f' m x_1 - f' n x_1∥ ≤ 2⁻¹ * r⁻¹ * ε,
-  { intros y hy,
-    rw ←dist_eq_norm,
-    exact (hN2 y hy).le, },
-  have hxb : x ∈ closed_ball x r, simp [h.le],
-  have mvt := mean_value_theorem_for_differences (convex_closed_ball x r) (hf m) (hf n) this hy hxb,
-  specialize hN1 m (ge_trans hm (by simp)) n (ge_trans hn (by simp)),
-  rw dist_eq_norm at hN1,
-
-  have : ε = (2⁻¹ * ε) + (2⁻¹ * ε), ring,
-  rw this,
-  have : r⁻¹ * r = 1, { exact inv_mul_cancel h.ne.symm, },
-
-  have : ∥y - x∥ * (∥y - x∥⁻¹ * ∥f m y - f n y - (f m x - f n x)∥) ≤ 2⁻¹ * ε,
-  { have : ∥y - x∥ ≤ r, { rw [mem_closed_ball, dist_eq_norm] at hy, exact hy, },
-    calc ∥y - x∥ * (∥y - x∥⁻¹ * ∥f m y - f n y - (f m x - f n x)∥) ≤ r * (2⁻¹ * r⁻¹ * ε) :
-      mul_le_mul this mvt (mul_nonneg (by simp) (by simp)) (h.le)
-    ... = 2⁻¹ * ε : begin
-      ring_nf,
-      rw [mul_assoc, inv_mul_cancel h.ne.symm],
-      ring,
-    end },
-  exact add_lt_add_of_le_of_lt this hN1,
+  rw ←div_eq_inv_mul,
+  exact half_lt_self hε.lt,
 end
 
 /-- (d/dx) lim_{n → ∞} f_n x = lim_{n → ∞} f'_n x on a closed ball when the f'_n

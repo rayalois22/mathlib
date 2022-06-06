@@ -179,6 +179,25 @@ calc tendsto ↿F (p ×ᶠ ⊤) (𝓝 c)
 ... ↔ ∀ V ∈ 𝓤 β, {x | (c, ↿F x) ∈ V} ∈ p ×ᶠ (⊤ : filter α) : iff.rfl
 ... ↔ ∀ V ∈ 𝓤 β, {i | ∀ a, (c, F i a) ∈ V} ∈ p : by simpa [mem_prod_top]
 
+/-- Uniform convergence on the empty set is vacuously true -/
+lemma tendsto_uniformly_on_of_empty :
+  tendsto_uniformly_on F f p ∅ :=
+λ u hu, by simp
+
+/-- Uniform convergence on a singleton is equivalent to regular convergence -/
+lemma tendsto_uniformly_on_singleton_iff_tendsto :
+  tendsto_uniformly_on F f p {x} ↔ tendsto (λ n : ι, F n x) p (𝓝 (f x)) :=
+begin
+  rw uniform.tendsto_nhds_right,
+  unfold tendsto,
+  rw filter.le_def,
+  simp_rw filter.mem_map',
+
+  split,
+  exact (λ h u hu, by simpa using eventually_iff.mp (h u hu)),
+  exact (λ h u hu, by simpa using eventually_iff.mp (h u hu)),
+end
+
 lemma uniform_continuous_on.tendsto_uniformly [uniform_space α] [uniform_space γ]
   {x : α} {U : set α} (hU : U ∈ 𝓝 x)
   {F : α → β → γ} (hF : uniform_continuous_on ↿F (U ×ˢ (univ : set β))) :
@@ -250,6 +269,22 @@ begin
   -- Finish the proof
   exact ⟨F m x, ⟨hm', htsymm (hm x hx)⟩⟩,
 end
+
+lemma uniform_cauchy_seq_on.mono {s' : set α} (hf : uniform_cauchy_seq_on F p s) (hss' : s' ⊆ s) :
+  uniform_cauchy_seq_on F p s' :=
+λ u hu, (hf u hu).mono (λ x hx y hy, hx y (hss' hy))
+
+/-- Composing on the right by a function preserves uniform convergence -/
+lemma uniform_cauchy_seq_on.comp {γ : Type*} (hf : uniform_cauchy_seq_on F p s) (g : γ → α) :
+  uniform_cauchy_seq_on (λ n, F n ∘ g) p (g ⁻¹' s) :=
+λ u hu, (hf u hu).mono (λ x hx y hy, hx (g y) hy)
+
+/-- Composing on the left by a uniformly continuous function preserves
+uniform convergence -/
+lemma uniform_cauchy_seq_on.comp' [uniform_space γ] {g : β → γ} (hf : uniform_cauchy_seq_on F p s)
+  (hg : uniform_continuous g) :
+  uniform_cauchy_seq_on (λ n, g ∘ (F n)) p s :=
+λ u hu, hf _ (hg hu)
 
 section seq_tendsto
 

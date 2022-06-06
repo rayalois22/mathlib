@@ -461,6 +461,48 @@ begin
   simp [dist_eq_norm]
 end
 
+lemma normed_group.tendsto_uniformly_on_zero {ι : Type*} {f : ι → E → G} {s : set E}
+  {l : filter ι} :
+  tendsto_uniformly_on f 0 l s ↔ ∀ ε > 0, ∀ᶠ (N : ι) in l, ∀ x : E, x ∈ s → ∥f N x∥ < ε :=
+begin
+  rw metric.tendsto_uniformly_on_iff,
+  split,
+  { exact (λ h ε hε, (h ε hε).mono (λ i hi x hx, by simpa using (hi x hx))), },
+  { exact (λ h ε hε, (h ε hε).mono (λ i hi x hx, by simpa using (hi x hx))), },
+end
+
+lemma normed_group.uniform_cauchy_seq_on_iff_tendsto_uniformly_on_zero
+  {ι : Type*} {f : ι → E → G} {s : set E} {l : filter ι} :
+  uniform_cauchy_seq_on f l s ↔
+  tendsto_uniformly_on (λ n : ι × ι, λ z : E, f n.fst z - f n.snd z) 0 (l.prod l) s :=
+begin
+  split,
+  { intros hf u hu,
+    obtain ⟨ε, hε, H⟩ := uniformity_basis_dist.mem_uniformity_iff.mp hu,
+    have : {p : G × G | dist p.fst p.snd < ε} ∈ (𝓤 G),
+    { rw uniformity_basis_dist.mem_uniformity_iff,
+      use ε,
+      exact ⟨hε, by simp [H]⟩, },
+
+    refine (hf {p : G × G | dist p.fst p.snd < ε} this).mono (λ N h x hx, H _ _ _),
+    specialize h x hx,
+    simp at h,
+    rw dist_eq_norm at h,
+    simp [h], },
+
+  { intros hf u hu,
+    obtain ⟨ε, hε, H⟩ := uniformity_basis_dist.mem_uniformity_iff.mp hu,
+    have : {p : G × G | dist p.fst p.snd < ε} ∈ (𝓤 G),
+    { rw uniformity_basis_dist.mem_uniformity_iff,
+      use ε,
+      exact ⟨hε, by simp [H]⟩, },
+    refine (hf {p : G × G | dist p.fst p.snd < ε} this).mono (λ N h x hx, H _ _ _),
+    specialize h x hx,
+    simp only [set.mem_set_of_eq, dist_eq_norm] at h ⊢,
+    rw norm_sub_rev at h,
+    simpa using h, },
+end
+
 open finset
 
 /-- A homomorphism `f` of seminormed groups is Lipschitz, if there exists a constant `C` such that
