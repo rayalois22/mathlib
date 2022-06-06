@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2022 Yury Kudryashov. All rights reserved.
+Copyright (c) 2021 Andrew Yang. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Yury Kudryashov, Andrew Yang
+Authors: Andrew Yang, Yury G. Kudryashov
 -/
 import topology.continuous_on
 import data.setoid.basic
@@ -12,7 +12,9 @@ import tactic.tfae
 
 In this file we define
 
-* `inseparable x y`: a predicate saying that two points in a topological space have the same
+* `specializes` (notation: `x ⤳ y`) : a relation saying that `𝓝 x ≤ 𝓝 y`;
+
+* `inseparable`: a relation saying that two points in a topological space have the same
   neighbourhoods; equivalently, they can't be separated by an open set;
 
 * `inseparable_setoid X`: same relation, as a `setoid`;
@@ -23,8 +25,9 @@ We also prove various basic properties of the relation `inseparable`.
 
 ## Notations
 
-- `~` is used as a local notation for `inseparable`;
-- `𝓝 x` is the neighbourhoods filter of a point `x`, defined elsewhere.
+- `x ⤳ y`: notation for `specializes x y` in locale `topological_space`;
+- `x ~ y` is used as a local notation for `inseparable x y`;
+- `𝓝 x` is the neighbourhoods filter `nhds x` of a point `x`, defined elsewhere.
 
 ## Tags
 
@@ -36,6 +39,10 @@ open_locale topological_space
 
 variables {X Y : Type*} [topological_space X] [topological_space Y] {x y z : X}
   {s : set X} {f : X → Y}
+
+/-!
+### `specializes` relation
+-/
 
 /-- `x` specializes to `y` (notation: `x ⤳ y`) if either of the following equivalent properties
 hold:
@@ -54,6 +61,8 @@ def specializes (x y : X) : Prop := 𝓝 x ≤ 𝓝 y
 
 localized "infix ` ⤳ `:300 := specializes" in topological_space
 
+/-- A collection of equivalent definitions of `x ⤳ y`. The public API is given by `iff` lemmas
+below. -/
 lemma specializes_tfae (x y : X) :
   tfae [x ⤳ y,
     pure x ≤ 𝓝 y,
@@ -142,14 +151,20 @@ variable (X)
 /-- Specialization forms a preorder on the topological space. -/
 def specialization_preorder : preorder X :=
 { le := λ x y, y ⤳ x,
-  le_refl := λ x, specializes_refl x,
-  le_trans := λ _ _ _ h₁ h₂, h₂.trans h₁ }
+  lt := λ x y, y ⤳ x ∧ ¬(x ⤳ y),
+  .. preorder.lift (order_dual.to_dual ∘ 𝓝) }
 
 variable {X}
 
+/-- A continuous function is monotone with respect to the specialization preorders on the domain and
+the codomain. -/
 lemma continuous.specialization_monotone (hf : continuous f) :
   @monotone _ _ (specialization_preorder X) (specialization_preorder Y) f :=
 λ x y h, h.map hf
+
+/-!
+### `inseparable` relation
+-/
 
 /-- Two points `x` and `y` in a topological space are `inseparable` if any of the following
 equivalent properties hold:
@@ -234,6 +249,12 @@ lemma is_closed.not_inseparable (hs : is_closed s) (hx : x ∈ s) (hy : y ∉ s)
 
 lemma is_open.not_inseparable (hs : is_open s) (hx : x ∈ s) (hy : y ∉ s) : ¬x ~ y :=
 λ h, hy $ (h.mem_open_iff hs).1 hx
+
+/-!
+### Separation quotient
+
+In this section we define the quotient of a topological space by the `inseparable` relation.
+-/
 
 variable (X)
 
