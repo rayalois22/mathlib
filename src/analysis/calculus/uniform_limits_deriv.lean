@@ -252,9 +252,6 @@ begin
   have hyc : y ∈ closed_ball x r,
   { exact (mem_ball.mp hy).le, },
 
-  -- uniform convergence of the derivatives implies uniform convergence of the primal
-  have hfguc := uniform_convergence_of_uniform_convergence_derivatives bounded_closed_ball (convex_closed_ball x r) hf hfg hfg',
-
   -- convergence of the primal and uniform convergence of the derivatives implies
   -- uniform convergence of the difference quotients
   have hdiff := difference_quotients_converge_uniformly (convex_closed_ball x r) hf hfg hfg' y hyc,
