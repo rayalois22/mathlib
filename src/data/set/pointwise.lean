@@ -596,22 +596,6 @@ s.zero_mul_subset.antisymm $ by simpa [mem_mul] using hs
 
 end mul_zero_class
 
-section mul_zero_class
-variables [mul_zero_class α] {s t : set α}
-
-/-! Note that `set` is not a `mul_zero_class` because `0 * ∅ ≠ 0`. -/
-
-lemma mul_zero_subset (s : set α) : s * 0 ⊆ 0 := by simp [subset_def, mem_mul]
-lemma zero_mul_subset (s : set α) : 0 * s ⊆ 0 := by simp [subset_def, mem_mul]
-
-lemma nonempty.mul_zero (hs : s.nonempty) : s * 0 = 0 :=
-s.mul_zero_subset.antisymm $ by simpa [mem_mul] using hs
-
-lemma nonempty.zero_mul (hs : s.nonempty) : 0 * s = 0 :=
-s.zero_mul_subset.antisymm $ by simpa [mem_mul] using hs
-
-end mul_zero_class
-
 section group
 variables [group α] {s t : set α} {a b : α}
 
@@ -877,6 +861,10 @@ lemma smul_Inter₂_subset (s : set α) (t : Π i, κ i → set β) :
   s • (⋂ i j, t i j) ⊆ ⋂ i j, s • t i j :=
 image2_Inter₂_subset_right _ _ _
 
+@[simp, to_additive] lemma bUnion_smul_set_eq_smul (s : set α) (t : set β) :
+  (⋃ a ∈ s, a • t) = s • t :=
+Union_image_left _
+
 @[to_additive] lemma finite.smul : s.finite → t.finite → (s • t).finite := finite.image2 _
 
 end has_scalar
@@ -1019,39 +1007,8 @@ protected def mul_distrib_mul_action_set [monoid α] [monoid β] [mul_distrib_mu
 { smul_mul := λ _ _ _, image_image2_distrib $ smul_mul' _,
   smul_one := λ _, image_singleton.trans $ by rw [smul_one, singleton_one] }
 
-instance [has_zero α] [has_mul α] [no_zero_divisors α] : no_zero_divisors (set α) :=
-⟨λ s t h, begin
-  by_contra' H,
-  have hst : (s * t).nonempty := h.symm.subst zero_nonempty,
-  simp_rw [←hst.of_mul_left.subset_zero_iff, ←hst.of_mul_right.subset_zero_iff, not_subset,
-    mem_zero] at H,
-  obtain ⟨⟨a, hs, ha⟩, b, ht, hb⟩ := H,
-  exact (eq_zero_or_eq_zero_of_mul_eq_zero $ h.subset $ mul_mem_mul hs ht).elim ha hb,
-end⟩
-
-instance [has_zero α] [has_zero β] [has_scalar α β] [no_zero_smul_divisors α β] :
-  no_zero_smul_divisors (set α) (set β) :=
-⟨λ s t h, begin
-  by_contra' H,
-  have hst : (s • t).nonempty := h.symm.subst zero_nonempty,
-  simp_rw [←hst.of_smul_left.subset_zero_iff, ←hst.of_smul_right.subset_zero_iff, not_subset,
-    mem_zero] at H,
-  obtain ⟨⟨a, hs, ha⟩, b, ht, hb⟩ := H,
-  exact (eq_zero_or_eq_zero_of_smul_eq_zero $ h.subset $ smul_mem_smul hs ht).elim ha hb,
-end⟩
-
-instance no_zero_smul_divisors_set [has_zero α] [has_zero β] [has_scalar α β]
-  [no_zero_smul_divisors α β] : no_zero_smul_divisors α (set β) :=
-⟨λ a s h, begin
-  by_contra' H,
-  have hst : (a • s).nonempty := h.symm.subst zero_nonempty,
-  simp_rw [←hst.of_image.subset_zero_iff, not_subset, mem_zero] at H,
-  obtain ⟨ha, b, ht, hb⟩ := H,
-  exact (eq_zero_or_eq_zero_of_smul_eq_zero $ h.subset $ smul_mem_smul_set ht).elim ha hb,
-end⟩
-
-localized "attribute [instance] set.distrib_mul_action_set set.mul_distrib_mul_action_set
-  set.no_zero_divisors set.no_zero_smul_divisors set.no_zero_smul_divisors_set" in pointwise
+localized "attribute [instance] set.distrib_mul_action_set set.mul_distrib_mul_action_set"
+  in pointwise
 
 end smul
 

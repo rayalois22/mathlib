@@ -447,19 +447,6 @@ le_mul_iff.2 $ λ t₁ h₁ t₂ h₂, let ⟨b, hb⟩ := hg.nonempty_of_mem h�
 
 end mul_zero_class
 
-section mul_zero_class
-variables [mul_zero_class α] {f g : filter α}
-
-/-! Note that `filter` is not a `mul_zero_class` because `0 * ⊥ ≠ 0`. -/
-
-lemma ne_bot.mul_zero (hf : f.ne_bot) : 0 ≤ f * 0 :=
-le_mul_iff.2 $ λ t₁ h₁ t₂ h₂, let ⟨a, ha⟩ := hf.nonempty_of_mem h₁ in ⟨_, _, ha, h₂, mul_zero _⟩
-
-lemma ne_bot.zero_mul (hg : g.ne_bot) : 0 ≤ 0 * g :=
-le_mul_iff.2 $ λ t₁ h₁ t₂ h₂, let ⟨b, hb⟩ := hg.nonempty_of_mem h₂ in ⟨_, _, h₁, hb, zero_mul _⟩
-
-end mul_zero_class
-
 section group
 variables [group α] [division_monoid β] [monoid_hom_class F α β] (m : F) {f g f₁ g₁ : filter α}
   {f₂ g₂ : filter β}
@@ -695,37 +682,6 @@ protected def mul_distrib_mul_action_filter [monoid α] [monoid β] [mul_distrib
 { smul_mul := λ _ _ _, image_image2_distrib $ smul_mul' _,
   smul_one := λ _, image_singleton.trans $ by rw [smul_one, singleton_one] }
 
-instance [has_zero α] [has_mul α] [no_zero_divisors α] : no_zero_divisors (filter α) :=
-⟨λ f g h, begin
-  by_contra' H,
-  have hfg : (f * g).ne_bot := h.symm.subst zero_ne_bot,
-  simp_rw [←hfg.of_mul_left.nonpos_iff, ←hfg.of_mul_right.nonpos_iff, filter.not_le,
-    mem_zero] at H,
-  obtain ⟨⟨s, hf, hs⟩, t, hg, ht⟩ := H,
-  exact (eq_zero_or_eq_zero_of_mul_eq_zero $ h.subset $ mul_mem_mul hs ht).elim ha hb,
-end⟩
-
-instance [has_zero α] [has_zero β] [has_scalar α β] [no_zero_smul_divisors α β] :
-  no_zero_smul_divisors (filter α) (filter β) :=
-⟨λ f g h, begin
-  by_contra' H,
-  have hst : (f • g).ne_bot := h.symm.subst zero_ne_bot,
-  simp_rw [←hst.of_smul_left.nonpos_iff, ←hst.of_smul_right.nonpos_iff, filter.not_le,
-    mem_zero] at H,
-  obtain ⟨⟨a, hs, ha⟩, b, ht, hb⟩ := H,
-  exact (eq_zero_or_eq_zero_of_smul_eq_zero $ h.subset $ smul_mem_smul hs ht).elim ha hb,
-end⟩
-
-instance no_zero_smul_divisors_filter [has_zero α] [has_zero β] [has_scalar α β]
-  [no_zero_smul_divisors α β] : no_zero_smul_divisors α (filter β) :=
-⟨λ a f h, begin
-  by_contra' H,
-  have hf : (a • f).ne_bot := h.symm.subst zero_ne_bot,
-  simp_rw [←hf.of_smul_filter.nonpos_iff, filter.not_le, mem_zero] at H,
-  obtain ⟨ha, t, ht, hf⟩ := H,
-  exact (eq_zero_or_eq_zero_of_smul_eq_zero $ h.subset $ smul_mem_smul_set ht).elim ha hb,
-end⟩
-
 localized "attribute [instance] filter.distrib_mul_action_filter
   filter.mul_distrib_mul_action_filter" in pointwise
 
@@ -752,32 +708,10 @@ begin
   rwa [mem_preimage, zero_smul],
 end
 
-lemma zero_smul_filter (hg : g.ne_bot) : (0 : α) • g = 0 :=
-zero_smul_filter_nonpos.antisymm $ le_map_iff.2 $ λ s hs, begin
-  simp_rw [set.image_eta, zero_smul, (hg.nonempty_of_mem hs).image_const],
-  exact zero_mem_zero,
-end
-
-lemma zero_smul_filter_le (s : set β) : (0 : α) • g ≤ 0 :=
-λ s hs, begin
-  rw [mem_smul_filter, eq_univ_iff_forall.2 (λ a, (_ : a ∈ (•) (0 : α) ⁻¹' s))],
-  { exact univ_mem },
-  rwa [mem_preimage, zero_smul],
-end
-
 lemma ne_bot.zero_smul_filter (hg : g.ne_bot) : (0 : α) • g = (0 : filter β) :=
 by simp only [←map_smul, image_eta, zero_smul, map_const, pure_zero]
 
-lemma ne_bot.smul_zero (hf : f.ne_bot) : 0 ≤ f • (0 : filter β) :=
-le_smul_iff.2 $ λ t₁ h₁ t₂ h₂, let ⟨a, ha⟩ := hf.nonempty_of_mem h₁ in ⟨_, _, ha, h₂, smul_zero' _ _⟩
-
-lemma ne_bot.zero_smul (hg : g.ne_bot) : 0 ≤ (0 : filter α) • g :=
-le_smul_iff.2 $ λ t₁ h₁ t₂ h₂, let ⟨b, hb⟩ := hg.nonempty_of_mem h₂ in ⟨_, _, h₁, hb, zero_smul _ _⟩
-
-lemma subsingleton_zero_smul_set (s : set β) : ((0 : α) • s).subsingleton :=
-subsingleton_singleton.mono $ zero_smul_set_subset s
-
-lemma zero_mem_smul_set (h : (0 : set β) ∈ g) : (0 : set β) ∈ a • g :=
+lemma zero_mem_smul_filter (h : (0 : set β) ∈ g) (a : α) : (0 : set β) ∈ a • g :=
 begin
   rw mem_smul_filter,
   refine mem_of_superset h _,
@@ -785,27 +719,29 @@ begin
   exact smul_zero' _ _,
 end
 
-variables [no_zero_smul_divisors α β]
+variables [no_zero_smul_divisors α β] {a : α}
 
-lemma zero_mem_smul_iff :
-  (0 : set β) ∈ f • g ↔ (0 : set α) ∈ f ∧ g.ne_bot ∨ (0 : set β) ∈ g ∧ f.ne_bot :=
+instance : no_zero_smul_divisors (set α) (set β) := sorry
+
+lemma zero_mem_smul_iff : (0 : set β) ∈ f • g ↔ (0 : set α) ∈ f ∨ (0 : set β) ∈ g :=
 begin
   split,
-  { rintro ⟨a, b, ha, hb, h⟩,
+  { rintro ⟨s, t, hf, hg, h⟩,
+    rw [subset_zero_iff_eq, smul_eq_empty] at h,
+    obtain (rfl | rfl) | h := h,
+    { exact or.inl (mem_of_superset hf $ empty_subset _) },
+    { exact or.inr (mem_of_superset hg $ empty_subset _) },
     obtain rfl | rfl := eq_zero_or_eq_zero_of_smul_eq_zero h,
-    { exact or.inl ⟨ha, b, hb⟩ },
-    { exact or.inr ⟨hb, a, ha⟩ } },
-  { rintro (⟨hs, b, hb⟩ | ⟨ht, a, ha⟩),
-    { exact ⟨0, b, hs, hb, zero_smul _ _⟩ },
-    { exact ⟨a, 0, ha, ht, smul_zero' _ _⟩ } }
+    { exact or.inl hf },
+    { exact or.inr hg } },
+  { rintro (hf | hg),
+    { exact ⟨0, univ, hf, univ_mem, zero_smul_subset _⟩ },
+    { exact ⟨univ, 0, univ_mem, hg, smul_zero_subset _⟩ } }
 end
 
-lemma zero_mem_smul_set_iff (ha : a ≠ 0) : (0 : β) ∈ a • t ↔ (0 : β) ∈ t :=
-begin
-  refine ⟨_, zero_mem_smul_set⟩,
-  rintro ⟨b, hb, h⟩,
-  rwa (eq_zero_or_eq_zero_of_smul_eq_zero h).resolve_left ha at hb,
-end
+lemma zero_mem_smul_set_iff (ha : a ≠ 0) : (0 : set β) ∈ a • g ↔ (0 : set β) ∈ g :=
+⟨λ h, mem_of_superset h $ λ b hb, (eq_zero_or_eq_zero_of_smul_eq_zero hb).resolve_left ha,
+  λ h, zero_mem_smul_filter h _⟩
 
 end smul_with_zero
 
