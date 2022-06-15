@@ -527,4 +527,10 @@ theorem empty_Theory_categorical (T : language.empty.Theory) :
   κ.categorical T :=
 λ M N hM hN, by rw [empty.nonempty_equiv_iff, hM, hN]
 
+theorem empty_infinite_Theory_is_complete :
+  language.empty.infinite_theory.is_complete :=
+(empty_Theory_categorical ℵ₀ _).is_complete ℵ₀ _ le_rfl (by simp)
+  ⟨Theory.model.bundled ((model_infinite_theory_iff language.empty).2 nat.infinite)⟩
+  (λ M, (model_infinite_theory_iff language.empty).1 M.is_model)
+
 end cardinal
