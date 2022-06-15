@@ -145,9 +145,17 @@ lemma coe_of {M : Type w} [L.Structure M] [nonempty M] (h : M ⊨ T) :
 
 end Theory
 
+/-- A structure that is elementarily equivalent to a model, bundled as a model. -/
+def elementarily_equivalent.to_Model {M : T.Model} {N : Type*} [LN : L.Structure N] (h : M ≅[L] N) :
+  T.Model :=
+{ carrier := N,
+  struc := LN,
+  nonempty' := h.nonempty,
+  is_model := h.Theory_model }
+
 /-- An elementary substructure of a bundled model as a bundled model. -/
 def elementary_substructure.to_Model {M : T.Model} (S : L.elementary_substructure M) : T.Model :=
-Theory.Model.of T S
+S.elementarily_equivalent.symm.to_Model T
 
 instance {M : T.Model} (S : L.elementary_substructure M) [h : small S] :
   small (S.to_Model T) :=

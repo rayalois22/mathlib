@@ -156,6 +156,8 @@ begin
   rw lift_lift,
 end
 
+end Theory
+
 /-- The Upward Löwenheim–Skolem Theorem: If `κ` is a cardinal greater than the cardinalities of `L`
 and an infinite `L`-structure `M`, then `M` has an elementary extension of cardinality `κ`. -/
 theorem exists_elementary_embedding_card_eq (M : Type w') [L.Structure M] [iM : infinite M]
@@ -165,7 +167,7 @@ theorem exists_elementary_embedding_card_eq (M : Type w') [L.Structure M] [iM : 
   ∃ (N : bundled.{max u v w w'} L.Structure),
     nonempty (M ↪ₑ[L] N) ∧ # N = cardinal.lift.{max u v w'} κ :=
 begin
-  obtain ⟨N0, hN0⟩ := exists_large_model_of_infinite_model (L.elementary_diagram M) κ M,
+  obtain ⟨N0, hN0⟩ := (L.elementary_diagram M).exists_large_model_of_infinite_model κ M,
   let f0 := elementary_embedding.of_models_elementary_diagram L M N0,
   rw [← lift_le.{(max w w') (max u v)}, lift_lift, lift_lift] at h2,
   obtain ⟨N, hN1, hN2⟩ := exists_elementary_substructure_card_eq (L[[M]]) (set.range f0)
@@ -204,8 +206,8 @@ end
 
 theorem exists_elementarily_equivalent_card_eq_of_ge (M : Type w') [L.Structure M] [infinite M]
   (κ : cardinal.{w})
-  (h1 : cardinal.lift.{w} L.card ≤ cardinal.lift.{max u v} κ)
-  (h2 : cardinal.lift.{w} (# M) ≤ cardinal.lift.{w'} κ) :
+  (h1 : lift.{w} L.card ≤ cardinal.lift.{max u v} κ)
+  (h2 : lift.{w} (# M) ≤ cardinal.lift.{w'} κ) :
   ∃ (N : category_theory.bundled L.Structure), M ≅[L] N ∧ # N = κ :=
 begin
   obtain ⟨N, ⟨MN⟩, hN⟩ := exists_elementary_embedding_card_eq M κ h1 h2,
@@ -216,6 +218,32 @@ begin
       (equiv.bundled_induced_equiv L _).elementarily_equivalent, lift_inj.1 (trans _ hN)⟩,
   rw [← lift_umax, ← lift_id'.{(max u v w w') (max u v w w')} (# N), equiv.bundled_induced_α,
     lift_mk_shrink', ← lift_umax],
+end
+
+theorem exists_elementarily_equivalent_card_eq (M : Type w') [L.Structure M] [infinite M]
+  (κ : cardinal.{w})
+  (h1 : ℵ₀ ≤ κ)
+  (h2 : cardinal.lift.{w} L.card ≤ cardinal.lift.{max u v} κ) :
+  ∃ (N : category_theory.bundled L.Structure), M ≅[L] N ∧ # N = κ :=
+begin
+  cases le_or_gt (lift.{w'} κ) (cardinal.lift.{w} (# M)),
+  { exact exists_elementarily_equivalent_card_eq_of_le M κ h1 h2 h },
+  { exact exists_elementarily_equivalent_card_eq_of_ge M κ h2 (le_of_lt h) },
+end
+
+namespace Theory
+
+theorem exists_model_card_eq
+  (h : ∃ (M : Model.{u v (max u v)} T), infinite M)
+  (κ : cardinal.{w})
+  (h1 : ℵ₀ ≤ κ)
+  (h2 : cardinal.lift.{w} L.card ≤ cardinal.lift.{max u v} κ) :
+  ∃ (N : Model.{u v w} T), # N = κ :=
+begin
+  casesI h with M MI,
+  obtain ⟨N, hN, rfl⟩ := exists_elementarily_equivalent_card_eq M κ h1 h2,
+  haveI : nonempty N := hN.nonempty,
+  exact ⟨hN.Theory_model.bundled, rfl⟩,
 end
 
 variable (T)
@@ -470,6 +498,30 @@ variables {L : language.{u v}} (κ : cardinal.{w}) (T : L.Theory)
 /-- A theory is `κ`-categorical if all models of size `κ` are isomorphic. -/
 def categorical : Prop :=
 ∀ (M N : T.Model), # M = κ → # N = κ → nonempty (M ≃[L] N)
+
+/-- The Łoś–Vaught Test : a criterion for categorical theories to be complete. -/
+lemma categorical.is_complete (h : κ.categorical T)
+  (h1 : ℵ₀ ≤ κ)
+  (h2 : cardinal.lift.{w} L.card ≤ cardinal.lift.{max u v} κ)
+  (hS : T.is_satisfiable)
+  (hT : ∀ (M : Theory.Model.{u v max u v} T), infinite M) :
+  T.is_complete :=
+⟨hS, λ φ, begin
+  obtain ⟨N, hN⟩ := Theory.exists_model_card_eq ⟨hS.some, hT hS.some⟩ κ h1 h2,
+  rw [Theory.models_sentence_iff, Theory.models_sentence_iff],
+  by_contra con,
+  push_neg at con,
+  obtain ⟨⟨MF, hMF⟩, MT, hMT⟩ := con,
+  rw [sentence.realize_not, not_not] at hMT,
+  refine hMF _,
+  haveI := hT MT,
+  haveI := hT MF,
+  obtain ⟨NT, MNT, hNT⟩ := exists_elementarily_equivalent_card_eq MT κ h1 h2,
+  obtain ⟨NF, MNF, hNF⟩ := exists_elementarily_equivalent_card_eq MF κ h1 h2,
+  obtain ⟨TF⟩ := h (MNT.to_Model T) (MNF.to_Model T) hNT hNF,
+  exact ((MNT.realize_sentence φ).trans
+    ((TF.realize_sentence φ).trans (MNF.realize_sentence φ).symm)).1 hMT,
+end⟩
 
 theorem empty_Theory_categorical (T : language.empty.Theory) :
   κ.categorical T :=

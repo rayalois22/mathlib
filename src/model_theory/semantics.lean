@@ -889,5 +889,36 @@ lift_mk_le'.2 ⟨⟨_, set.inj_on_iff_injective.1 ((L.model_distinct_constants_t
 
 end cardinality
 
+namespace elementarily_equivalent
+
+@[symm] lemma symm (h : M ≅[L] N) : N ≅[L] M := h.symm
+
+@[trans] lemma trans (MN : M ≅[L] N) (NP : N ≅[L] P) : M ≅[L] P := MN.trans NP
+
+lemma complete_theory_eq (h : M ≅[L] N) : L.complete_theory M = L.complete_theory N := h
+
+lemma realize_sentence (h : M ≅[L] N) (φ : L.sentence) : M ⊨ φ ↔ N ⊨ φ :=
+(elementarily_equivalent_iff.1 h) φ
+
+lemma Theory_model_iff (h : M ≅[L] N) : M ⊨ T ↔ N ⊨ T :=
+by rw [Theory.model_iff_subset_complete_theory, Theory.model_iff_subset_complete_theory,
+    h.complete_theory_eq]
+
+lemma Theory_model [MT : M ⊨ T] (h : M ≅[L] N) : N ⊨ T :=
+h.Theory_model_iff.1 MT
+
+lemma nonempty_iff (h : M ≅[L] N) : nonempty M ↔ nonempty N :=
+(model_nonempty_theory_iff L).symm.trans (h.Theory_model_iff.trans (model_nonempty_theory_iff L))
+
+lemma nonempty [Mn : nonempty M] (h : M ≅[L] N) : nonempty N := h.nonempty_iff.1 Mn
+
+lemma infinite_iff (h : M ≅[L] N) : infinite M ↔ infinite N :=
+(model_infinite_theory_iff L).symm.trans (h.Theory_model_iff.trans (model_infinite_theory_iff L))
+
+lemma infinite [Mi : infinite M] (h : M ≅[L] N) : infinite N := h.infinite_iff.1 Mi
+
+end elementarily_equivalent
+
+
 end language
 end first_order
