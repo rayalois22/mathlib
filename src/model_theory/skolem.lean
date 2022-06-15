@@ -27,7 +27,7 @@ universes u v w w'
 namespace first_order
 namespace language
 open Structure cardinal
-open_locale cardinal first_order
+open_locale cardinal
 
 variables (L : language.{u v}) {M : Type w} [nonempty M] [L.Structure M]
 
