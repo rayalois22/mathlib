@@ -621,6 +621,14 @@ theorem bdd_above_iff_small (s : set cardinal.{u}) : bdd_above s ↔ small.{u} s
   { simp_rw [subtype.val_eq_coe, equiv.symm_apply_apply], refl }
 end⟩
 
+@[simp] lemma lift_mk_shrink (α : Type u) [small.{v} α] :
+  cardinal.lift.{max u w} (# (shrink.{v} α)) = cardinal.lift.{max v w} (# α) :=
+lift_mk_eq.2 ⟨(equiv_shrink α).symm⟩
+
+@[simp] lemma lift_mk_shrink' (α : Type u) [small.{v} α] :
+  cardinal.lift.{u} (# (shrink.{v} α)) = cardinal.lift.{v} (# α) :=
+lift_mk_eq'.2 ⟨(equiv_shrink α).symm⟩
+
 /-- The indexed supremum of cardinals is the smallest cardinal above
   everything in the family. -/
 def sup {ι : Type u} (f : ι → cardinal.{max u v}) : cardinal :=

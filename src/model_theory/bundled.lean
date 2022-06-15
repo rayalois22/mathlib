@@ -27,9 +27,27 @@ variables {L : first_order.language.{u v}}
   L.Structure M :=
 M.str
 
+open_locale first_order cardinal
+
+namespace equiv
+
+variables (L) {M : Type w} [L.Structure M] {N : Type w'} (g : M ≃ N)
+
+/-- A type bundled with the structure induced by an equivalence. -/
+@[simps] def bundled_induced  :
+  category_theory.bundled.{w'} L.Structure :=
+⟨N, g.induced_Structure⟩
+
+/-- An equivalence of types as a first-order equivalence to the bundled structure on the codomain.
+-/
+@[simp] def bundled_induced_equiv :
+  M ≃[L] g.bundled_induced L :=
+g.induced_Structure_equiv
+
+end equiv
+
 namespace first_order
 namespace language
-open_locale first_order
 
 /-- The equivalence relation on bundled `L.Structure`s indicating that they are isomorphic. -/
 instance equiv_setoid : setoid (category_theory.bundled L.Structure) :=
@@ -84,6 +102,9 @@ def equiv_induced {M : Model.{u v w} T} {N : Type w'} (e : M ≃ N) :
   struc := e.induced_Structure,
   is_model := @equiv.Theory_model L M N _ e.induced_Structure T e.induced_Structure_equiv _,
   nonempty' := e.symm.nonempty }
+
+instance of_small (M : Type w) [nonempty M] [L.Structure M] [M ⊨ T] [h : small.{w'} M] :
+  small.{w'} (Model.of T M) := h
 
 /-- Shrinks a small model to a particular universe. -/
 noncomputable def shrink (M : Model.{u v w} T) [small.{w'} M] :

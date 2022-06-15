@@ -186,6 +186,38 @@ begin
     rw [← lift_le.{_ (max (max u w') v w)}, lift_lift, lift_lift, lift_lift, lift_lift] }
 end
 
+theorem exists_elementarily_equivalent_card_eq_of_le (M : Type w') [L.Structure M] [nonempty M]
+  (κ : cardinal.{w})
+  (h1 : ℵ₀ ≤ κ)
+  (h2 : cardinal.lift.{w} L.card ≤ cardinal.lift.{max u v} κ)
+  (h3 : cardinal.lift.{w'} κ ≤ cardinal.lift.{w} (# M)) :
+  ∃ (N : category_theory.bundled L.Structure), M ≅[L] N ∧ # N = κ :=
+begin
+  obtain ⟨S, _, hS⟩ := exists_elementary_substructure_card_eq L ∅ κ h1 (by simp) h2 h3,
+  haveI : small.{w} S,
+  { rw [← lift_inj.{_ (w + 1)}, lift_lift, lift_lift] at hS,
+    exact small_iff_lift_mk_lt_univ.2 (lt_of_eq_of_lt hS κ.lift_lt_univ') },
+  refine ⟨(equiv_shrink _).bundled_induced L, S.elementarily_equivalent.symm.trans
+      (equiv.bundled_induced_equiv L _).elementarily_equivalent, lift_inj.1 (trans _ hS)⟩,
+  simp only [equiv.bundled_induced_α, lift_mk_shrink'],
+end
+
+theorem exists_elementarily_equivalent_card_eq_of_ge (M : Type w') [L.Structure M] [infinite M]
+  (κ : cardinal.{w})
+  (h1 : cardinal.lift.{w} L.card ≤ cardinal.lift.{max u v} κ)
+  (h2 : cardinal.lift.{w} (# M) ≤ cardinal.lift.{w'} κ) :
+  ∃ (N : category_theory.bundled L.Structure), M ≅[L] N ∧ # N = κ :=
+begin
+  obtain ⟨N, ⟨MN⟩, hN⟩ := exists_elementary_embedding_card_eq M κ h1 h2,
+  haveI : small.{w} N,
+  { refine small_iff_lift_mk_lt_univ.2 (lt_of_eq_of_lt _ κ.lift_lt_univ'),
+    rw [hN, lift_lift], },
+  refine ⟨(equiv_shrink _).bundled_induced L, MN.elementarily_equivalent.trans
+      (equiv.bundled_induced_equiv L _).elementarily_equivalent, lift_inj.1 (trans _ hN)⟩,
+  rw [← lift_umax, ← lift_id'.{(max u v w w') (max u v w w')} (# N), equiv.bundled_induced_α,
+    lift_mk_shrink', ← lift_umax],
+end
+
 variable (T)
 
 /-- A theory models a (bounded) formula when any of its nonempty models realizes that formula on all

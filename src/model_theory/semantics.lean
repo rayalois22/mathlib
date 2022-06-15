@@ -783,6 +783,9 @@ by rw [sentence.realize, sentence.realize, ← g.realize_formula, unique.eq_defa
 lemma Theory_model (g : M ≃[L] N) [M ⊨ T] : N ⊨ T :=
 ⟨λ φ hφ, (g.realize_sentence φ).1 (Theory.realize_sentence_of_mem T hφ)⟩
 
+lemma elementarily_equivalent (g : M ≃[L] N) : M ≅[L] N :=
+elementarily_equivalent_iff.2 g.realize_sentence
+
 end equiv
 
 namespace relations
