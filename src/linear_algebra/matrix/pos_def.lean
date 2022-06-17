@@ -29,6 +29,8 @@ open_locale matrix
 def pos_def (M : matrix n n R) :=
 M.is_hermitian ∧ ∀ x : n → R, x ≠ 0 → 0 < dot_product (star x) (M.mul_vec x)
 
+lemma pos_def.is_hermitian {M : matrix n n ℝ} (hM : M.pos_def) : M.is_hermitian := hM.1
+
 lemma pos_def_of_to_quadratic_form' [decidable_eq n] {M : matrix n n ℝ}
   (hM : M.is_symm) (hMq : M.to_quadratic_form'.pos_def) :
   M.pos_def :=
@@ -71,3 +73,34 @@ begin
 end
 
 end quadratic_form
+
+namespace matrix
+
+variables {n : Type*} [fintype n]
+
+/-- A positive definite matrix `M` induces an inner product `⟪x, y⟫ = xᴴMy`. -/
+noncomputable def inner_product_space.of_matrix [fintype n]
+  {M : matrix n n ℝ} (hM : M.pos_def) : inner_product_space ℝ (n → ℝ) :=
+inner_product_space.of_core
+{ inner := λ x y, dot_product (star x) (M.mul_vec y),
+  conj_sym := λ x y, by
+    rw [star_dot_product, star_ring_end_apply, star_star, star_mul_vec,
+      dot_product_mul_vec, hM.is_hermitian.eq],
+  nonneg_re := λ x,
+    begin
+      rw [is_R_or_C.re_to_real],
+      by_cases h : x = 0,
+      { simp [h] },
+      { exact le_of_lt (hM.2 x h) }
+    end,
+  definite := λ x hx,
+    begin
+      by_contra h,
+      apply (lt_self_iff_false (0 : ℝ)).1,
+      convert hM.2 x h,
+      rw hx
+    end,
+  add_left := by simp only [star_add, add_dot_product, eq_self_iff_true, forall_const],
+  smul_left := λ x y r, by rw [← smul_eq_mul, ←smul_dot_product, star_ring_end_apply, ← star_smul] }
+
+end matrix
