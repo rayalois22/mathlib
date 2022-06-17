@@ -337,6 +337,36 @@ begin
   exact congr_arg real.sqrt (norm_sq_eq_def' z)
 end
 
+/-- Order elements of `is_R_or_C` according to their real part whenever the imaginary parts are
+  equal. -/
+protected def partial_order : partial_order K :=
+{ le := λ z w, re z ≤ re w ∧ im z = im w,
+  lt := λ z w, re z < re w ∧ im z = im w,
+  lt_iff_le_not_le := λ z w, by { dsimp, rw lt_iff_le_not_le, tauto },
+  le_refl := λ x, ⟨le_rfl, rfl⟩,
+  le_trans := λ x y z h₁ h₂, ⟨h₁.1.trans h₂.1, h₁.2.trans h₂.2⟩,
+  le_antisymm := λ z w h₁ h₂, ext (h₁.1.antisymm h₂.1) h₁.2 }
+
+local attribute [instance] is_R_or_C.partial_order
+
+lemma le_def {z w : K} : z ≤ w ↔ re z ≤ re w ∧ im z = im w := iff.rfl
+lemma lt_def {z w : K} : z < w ↔ re z < re w ∧ im z = im w := iff.rfl
+
+/-- With `is_R_or_C.partial_order`, `is_R_or_C` becomes an `ordered_comm_ring`. -/
+protected def ordered_comm_ring : ordered_comm_ring K :=
+{ zero_le_one :=
+    by simp only [le_def, one_re, zero_le_one, map_zero, one_im, eq_self_iff_true, and_self],
+  add_le_add_left := λ w z h y,
+    by simpa only [le_def, map_add, add_le_add_iff_left, add_right_inj] using h,
+  mul_pos := λ z w hz hw,
+  begin
+    simp only [lt_def, hz.2.symm, hw.2.symm, mul_re, map_zero, mul_zero, sub_zero, mul_im,
+      zero_mul, add_zero, eq_self_iff_true, and_true],
+    exact mul_pos ((@zero_re' K _) ▸ hz.1) ((@zero_re' K _) ▸ hw.1)
+  end,
+  .. is_R_or_C.partial_order,
+  .. semi_normed_comm_ring.to_comm_ring }
+
 /-! ### Inversion -/
 
 @[simp, is_R_or_C_simps] lemma inv_re (z : K) : re (z⁻¹) = re z / norm_sq z :=
