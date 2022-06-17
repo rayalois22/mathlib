@@ -80,6 +80,7 @@ variables {𝕜 : Type*} [is_R_or_C 𝕜] {n : Type*} [fintype n]
 
 local attribute [instance] is_R_or_C.ordered_comm_ring
 
+/-- A positive definite matrix `M` induces an inner product `⟪x, y⟫ = xᴴMy`. -/
 noncomputable def inner_product_space.of_matrix
   {M : matrix n n 𝕜} (hM : M.pos_def) : inner_product_space 𝕜 (n → 𝕜) :=
 inner_product_space.of_core
